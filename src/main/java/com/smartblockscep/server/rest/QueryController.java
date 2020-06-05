@@ -23,9 +23,9 @@ public class QueryController {
 
         SiddhiApp siddhiApp = queryHandler.parse(query.getQuery());
 
-        queryHandler.compute(siddhiApp);
+        String out = queryHandler.compute(siddhiApp);
 
-        return query.getQuery();
+        return out;
     }
 
 }
