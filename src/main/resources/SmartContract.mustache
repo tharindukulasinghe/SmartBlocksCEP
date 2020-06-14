@@ -21,9 +21,9 @@ contract {{name}} {
     {{#isHasFilter}}
         if{{{expression}}}{
             processed{{outputStreamName}}Events.push(Event({
-            {{#outAttributes}}
-            {{rename}}: incomingEvent.{{name}}
-            {{/outAttributes}}
+                {{#outAttributes}}
+                {{rename}}: incomingEvent.{{name}}
+                {{/outAttributes}}
             }));
         }
     {{/isHasFilter}}
