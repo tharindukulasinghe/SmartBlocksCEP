@@ -2,22 +2,37 @@ pragma solidity >=0.4.22 <0.7.0;
 
 contract {{name}} {
 
-    struct Event {
+    struct {{inputStreamName}}Event {
         {{#attributes}}
         {{type}} {{name}}
         {{/attributes}}
     }
 
-    Event[] public processedEvents;
+    struct {{outputStreamName}}Event {
+        {{#outAttributes}}
+        {{type}} {{rename}}
+        {{/outAttributes}}
+    }
 
-    function process(Event incomingEvent){
 
-            if({{{expression}}}){
-                processedEvents.push(Event({
-                    {{#outAttributes}}
-                    {{rename}}: incomingEvent.{{name}}
-                    {{/outAttributes}}
-                }));
-            }
+    {{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
+
+    function process({{inputStreamName}}Event incoming{{inputStreamName}}Event){
+    {{#isHasFilter}}
+        if{{{expression}}}{
+            processed{{outputStreamName}}Events.push(Event({
+            {{#outAttributes}}
+            {{rename}}: incomingEvent.{{name}}
+            {{/outAttributes}}
+            }));
+        }
+    {{/isHasFilter}}
+    {{#isHasNoFilter}}
+        processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
+            {{#outAttributes}}
+            {{rename}}: incoming{{inputStreamName}}Event.{{name}}
+            {{/outAttributes}}
+        }));
+    {{/isHasNoFilter}}
     }
 }
