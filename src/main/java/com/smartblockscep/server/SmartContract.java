@@ -14,7 +14,6 @@ public class SmartContract {
     private List<String> inputs;
     private boolean hasFilter;
     private boolean hasNoFilter;
-    private int windowLength;
 
     public String getOutputStreamName() {
         return outputStreamName;
@@ -95,8 +94,4 @@ public class SmartContract {
     public void setName(String name) {
         this.name = name;
     }
-
-    public int getWindowLength(){return windowLength;}
-
-    public void setWindowLength(int windowLength){this.windowLength=windowLength;}
 }
