@@ -2,7 +2,7 @@ pragma solidity >=0.4.22 <0.7.0;
 
 contract {{name}} {
 
-unit16[{{windowLength}}] values;
+{{inputStreamName}}Event[{{windowLength}}] window;
 unit8 index;
 
 struct {{inputStreamName}}Event {
@@ -21,14 +21,25 @@ struct {{outputStreamName}}Event {
 {{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
 function get() public return (unit16){
-return vars[index];
+return window[index];
+}
+
+function set({{inputStreamName}}Event incoming{{inputStreamName}}Event){
+if(index == window.size) {
+index == 0;
+}
+else {
+index++;
+}
+window[index] ==
 }
 
 function getHistory() public return(unit16[]){
 unit16[{{windowLength}}] result;
-for(int8 i=index; i>0; i--)
+
+for(int8 i=index; i>0; i--) {
 result[index -1] = vars[i];
-for(int8 i= vars.size-1; i>index; i--)
+for(int8 i=vars.size-1; i>index; i--)
 result[index + vars.size -1] = vars[i];
 return result;
 }
