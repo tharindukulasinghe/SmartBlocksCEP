@@ -166,11 +166,23 @@ public class NewQueryHandler {
                             }
                         }
 
-                        moderatedOutputAttributes.add(streamAttribute);
+                } else if (outputAttribute.getExpression() instanceof Variable) {
+                    Variable variable = (Variable) outputAttribute.getExpression();
+
+                    StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
+
+                    streamAttribute.setName(variable.getAttributeName());
+                    streamAttribute.setRename(outputAttribute.getRename());
+                    for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                        if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
+                            streamAttribute.setType(smartContract.getAttributes().get(i).getType());
+                        }
                     }
 
-                    this.smartContract.setOutAttributes(moderatedOutputAttributes);
+                    moderatedOutputAttributes.add(streamAttribute);
                 }
+
+                this.smartContract.setOutAttributes(moderatedOutputAttributes);
 
                 for (Variable variable : groupByList) {
                     System.out.println(variable.getAttributeName());
@@ -185,7 +197,7 @@ public class NewQueryHandler {
                     Compare.Operator operator = compare.getOperator();
                     System.out.println("rightExpression "+rightExpression);
                     System.out.println("leftExpression "+leftExpression);
-                    
+
                 }else if(havingExpression instanceof And){
                     And and = (And) havingExpression;
                     Expression leftExpression = and.getLeftExpression();

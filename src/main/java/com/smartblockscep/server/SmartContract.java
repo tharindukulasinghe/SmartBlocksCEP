@@ -96,7 +96,11 @@ public class SmartContract {
         this.name = name;
     }
 
-    public int getWindowLength(){return windowLength;}
+    public int getWindowLength() {
+        return windowLength;
+    }
 
-    public void setWindowLength(int windowLength){this.windowLength=windowLength;}
+    public void setWindowLength(int windowLength) {
+        this.windowLength = windowLength;
+    }
 }

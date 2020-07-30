@@ -6,32 +6,32 @@ contract {{name}} {
         {{#attributes}}
         {{type}} {{name}}
         {{/attributes}}
+}
+
+struct {{outputStreamName}}Event {
+{{#outAttributes}}
+    {{type}} {{rename}}
+{{/outAttributes}}
+}
+
+
+{{outputStreamName}}Event[] public {{outputStreamName}}Events;
+
+function process({{inputStreamName}}Event incoming{{inputStreamName}}Event){
+{{#isHasFilter}}
+    if {{{expression}}}{
+    {{outputStreamName}}Events.push({{outputStreamName}}Event({
+    {{#outAttributes}}
+        {{rename}}: incoming{{inputStreamName}}Event.{{name}}
+    {{/outAttributes}}
+    }));
     }
-
-    struct {{outputStreamName}}Event {
-        {{#outAttributes}}
-        {{type}} {{rename}}
-        {{/outAttributes}}
-    }
-
-
-    {{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
-
-    function process({{inputStreamName}}Event incoming{{inputStreamName}}Event){
-    {{#isHasFilter}}
-        if{{{expression}}}{
-            processed{{outputStreamName}}Events.push(Event({
-                {{#outAttributes}}
-                {{rename}}: incomingEvent.{{name}}
-                {{/outAttributes}}
-            }));
-        }
-    {{/isHasFilter}}
+{{/isHasFilter}}
     {{#isHasNoFilter}}
-        processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
-            {{#outAttributes}}
+        {{outputStreamName}}Events.push({{outputStreamName}}Event({
+        {{#outAttributes}}
             {{rename}}: incoming{{inputStreamName}}Event.{{name}}
-            {{/outAttributes}}
+        {{/outAttributes}}
         }));
     {{/isHasNoFilter}}
     }
