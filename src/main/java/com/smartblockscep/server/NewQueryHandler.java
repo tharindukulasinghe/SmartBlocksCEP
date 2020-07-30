@@ -9,10 +9,13 @@ import com.smartblockscep.server.api.definition.StreamDefinition;
 import com.smartblockscep.server.api.execution.ExecutionElement;
 import com.smartblockscep.server.api.execution.query.Query;
 import com.smartblockscep.server.api.execution.query.input.handler.Filter;
+import com.smartblockscep.server.api.execution.query.input.handler.StreamHandler;
 import com.smartblockscep.server.api.execution.query.input.handler.Window;
 import com.smartblockscep.server.api.execution.query.input.stream.SingleInputStream;
 import com.smartblockscep.server.api.execution.query.output.stream.OutputStream;
+import com.smartblockscep.server.api.execution.query.selection.OrderByAttribute;
 import com.smartblockscep.server.api.execution.query.selection.OutputAttribute;
+import com.smartblockscep.server.api.execution.query.selection.Selector;
 import com.smartblockscep.server.api.expression.AttributeFunction;
 import com.smartblockscep.server.api.expression.Expression;
 import com.smartblockscep.server.api.expression.Variable;
@@ -51,7 +54,7 @@ public class NewQueryHandler {
         return (SiddhiApp) eval.visit(tree);
     }
 
-    public String computeWindow(SiddhiApp siddhiApp) {
+    public String compute(SiddhiApp siddhiApp) {
         setStreamDefinition(siddhiApp);
         setExpression(siddhiApp);
 
@@ -74,27 +77,32 @@ public class NewQueryHandler {
 
     public void setExpression(SiddhiApp siddhiApp) {
         String text = siddhiApp.toString();
-        //System.out.println(text);
+        System.out.println(text);
         List<ExecutionElement> executionElements = siddhiApp.getExecutionElementList();
-        String expression = "";
-        if (executionElements.get(0) instanceof Query) {
-            Query query = (Query) executionElements.get(0);
-            SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
-            OutputStream outputStream = query.getOutputStream();
-            smartContract.setInputStreamName(singleInputStream.getStreamId());
-            smartContract.setOutputStreamName(outputStream.getId());
 
-            if (singleInputStream.getStreamHandlers().size() != 0) {
-                if (singleInputStream.getStreamHandlers().get(0) instanceof Filter) {
-                    System.out.println("Filter");
-                    setFilter((Filter) singleInputStream.getStreamHandlers().get(0));
+        for (ExecutionElement executionElement : executionElements) {
+            if (executionElement instanceof Query) {
 
-                } else if (singleInputStream.getStreamHandlers().get(0) instanceof Window) {
-                    System.out.println("Window");
-                    setWindow((Window) singleInputStream.getStreamHandlers().get(0));
+                Query query = (Query) executionElement;
+
+                SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
+                OutputStream outputStream = query.getOutputStream();
+                smartContract.setInputStreamName(singleInputStream.getStreamId());
+                smartContract.setOutputStreamName(outputStream.getId());
+
+                List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
+
+                for (StreamHandler streamHandler : streamHandlerList) {
+                    if (streamHandler instanceof Filter) {
+                        System.out.println("Filter");
+                        setFilter((Filter) streamHandler);
+
+                    } else if (streamHandler instanceof Window) {
+                        System.out.println("Window");
+                        setWindow((Window) streamHandler);
+                    }
                 }
             }
-
         }
     }
 
@@ -106,7 +114,7 @@ public class NewQueryHandler {
         this.smartContract.setExpression(expression);
     }
 
-    public void setWindow(Window window){
+    public void setWindow(Window window) {
         int expression = 0;
         expression = getWindowExpression(window.getParameters()[0]);
         smartContract.setWindowLength(expression);
@@ -116,30 +124,36 @@ public class NewQueryHandler {
 
         List<ExecutionElement> executionElements = siddhiApp.getExecutionElementList();
         List<StreamOutputAttribute> moderatedOutputAttributes = new ArrayList<>();
-        List<OutputAttribute> outputAttributes = new ArrayList<>();
 
-        if (executionElements.get(0) instanceof Query) {
-            Query query = (Query) executionElements.get(0);
-            outputAttributes = query.getSelector().getSelectionList();
+        for (ExecutionElement executionElement : executionElements) {
 
-        }
+            if (executionElement instanceof Query) {
+                Query query = (Query) executionElement;
 
-        if (outputAttributes.size() != 0) {
-            System.out.println(outputAttributes.size());
-            for (OutputAttribute outputAttribute : outputAttributes) {
-                System.out.println(outputAttribute.getExpression());
+                Selector selector = query.getSelector();
 
-                if(outputAttribute.getExpression() instanceof AttributeFunction){
-                    AttributeFunction attributeFunction = (AttributeFunction) outputAttribute.getExpression();
-                    String functionName = attributeFunction.getName();
-                    System.out.println(functionName);
-                    Expression[] expressions = attributeFunction.getParameters();
-                    if(expressions[0] instanceof Variable){
-                        Variable variable = (Variable) expressions[0];
-                        System.out.println(variable.getAttributeName());
-                    }
-                    
-                }else if(outputAttribute.getExpression() instanceof Variable){
+                List<OutputAttribute> selectionList = selector.getSelectionList();
+                List<Variable> groupByList = selector.getGroupByList();
+                Expression havingExpression = selector.getHavingExpression();
+                Constant limit = selector.getLimit();
+                Constant offset = selector.getOffset();
+                List<OrderByAttribute> orderByAttributeList = selector.getOrderByList();
+
+                for (OutputAttribute outputAttribute : selectionList) {
+                    Expression outputAttributeExpression = outputAttribute.getExpression();
+
+                    if (outputAttributeExpression instanceof AttributeFunction) {
+                        AttributeFunction attributeFunction = (AttributeFunction) outputAttribute.getExpression();
+                        String functionName = attributeFunction.getName();
+                        //System.out.println(functionName);
+                        Expression[] expressions = attributeFunction.getParameters();
+                        for (Expression expression : expressions)
+                            if (expression instanceof Variable) {
+                                Variable variable = (Variable) expression;
+                                System.out.println(variable.getAttributeName());
+                            }
+
+                    } else if (outputAttributeExpression instanceof Variable) {
                         Variable variable = (Variable) outputAttribute.getExpression();
 
                         StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
@@ -156,13 +170,44 @@ public class NewQueryHandler {
                     }
 
                     this.smartContract.setOutAttributes(moderatedOutputAttributes);
+                }
+
+                for (Variable variable : groupByList) {
+                    System.out.println(variable.getAttributeName());
+                }
+
+//                Process having
+                System.out.println(havingExpression);
+                if(havingExpression instanceof Compare){
+                    Compare compare = (Compare) havingExpression;
+                    Expression rightExpression = compare.getRightExpression();
+                    Expression leftExpression = compare.getLeftExpression();
+                    Compare.Operator operator = compare.getOperator();
+                    System.out.println("rightExpression "+rightExpression);
+                    System.out.println("leftExpression "+leftExpression);
+                    
+                }else if(havingExpression instanceof And){
+                    And and = (And) havingExpression;
+                    Expression leftExpression = and.getLeftExpression();
+                    Expression rightExpression = and.getRightExpression();
+
+                }
+
+                if(limit != null){
+                   IntConstant intConstant = (IntConstant) limit;
+                    System.out.println(intConstant.getValue());
+                }
+
+                if(offset != null){
+                    IntConstant intConstant = (IntConstant) offset;
+                    System.out.println(intConstant.getValue());
+                }
+
 
             }
 
-
         }
 
-        Iterator<OutputAttribute> outAttributeIterator = outputAttributes.iterator();
     }
 
     public void setStreamDefinition(SiddhiApp siddhiApp) {
@@ -188,8 +233,8 @@ public class NewQueryHandler {
     }
 
     public int getWindowExpression(Expression expression) {
-        int windowSize=0;
-        if(expression instanceof IntConstant){
+        int windowSize = 0;
+        if (expression instanceof IntConstant) {
             IntConstant intConstant = (IntConstant) expression;
             windowSize = intConstant.getValue();
         }
