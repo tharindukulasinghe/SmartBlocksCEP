@@ -9,10 +9,13 @@ import com.smartblockscep.server.api.definition.StreamDefinition;
 import com.smartblockscep.server.api.execution.ExecutionElement;
 import com.smartblockscep.server.api.execution.query.Query;
 import com.smartblockscep.server.api.execution.query.input.handler.Filter;
+import com.smartblockscep.server.api.execution.query.input.handler.StreamHandler;
 import com.smartblockscep.server.api.execution.query.input.handler.Window;
 import com.smartblockscep.server.api.execution.query.input.stream.SingleInputStream;
 import com.smartblockscep.server.api.execution.query.output.stream.OutputStream;
+import com.smartblockscep.server.api.execution.query.selection.OrderByAttribute;
 import com.smartblockscep.server.api.execution.query.selection.OutputAttribute;
+import com.smartblockscep.server.api.execution.query.selection.Selector;
 import com.smartblockscep.server.api.expression.AttributeFunction;
 import com.smartblockscep.server.api.expression.Expression;
 import com.smartblockscep.server.api.expression.Variable;
@@ -27,7 +30,6 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -51,7 +53,7 @@ public class NewQueryHandler {
         return (SiddhiApp) eval.visit(tree);
     }
 
-    public String computeWindow(SiddhiApp siddhiApp) {
+    public String compute(SiddhiApp siddhiApp) {
         setStreamDefinition(siddhiApp);
         setExpression(siddhiApp);
 
@@ -74,27 +76,32 @@ public class NewQueryHandler {
 
     public void setExpression(SiddhiApp siddhiApp) {
         String text = siddhiApp.toString();
-        //System.out.println(text);
+        System.out.println(text);
         List<ExecutionElement> executionElements = siddhiApp.getExecutionElementList();
-        String expression = "";
-        if (executionElements.get(0) instanceof Query) {
-            Query query = (Query) executionElements.get(0);
-            SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
-            OutputStream outputStream = query.getOutputStream();
-            smartContract.setInputStreamName(singleInputStream.getStreamId());
-            smartContract.setOutputStreamName(outputStream.getId());
 
-            if (singleInputStream.getStreamHandlers().size() != 0) {
-                if (singleInputStream.getStreamHandlers().get(0) instanceof Filter) {
-                    System.out.println("Filter");
-                    setFilter((Filter) singleInputStream.getStreamHandlers().get(0));
+        for (ExecutionElement executionElement : executionElements) {
+            if (executionElement instanceof Query) {
 
-                } else if (singleInputStream.getStreamHandlers().get(0) instanceof Window) {
-                    System.out.println("Window");
-                    setWindow((Window) singleInputStream.getStreamHandlers().get(0));
+                Query query = (Query) executionElement;
+
+                SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
+                OutputStream outputStream = query.getOutputStream();
+                smartContract.setInputStreamName(singleInputStream.getStreamId());
+                smartContract.setOutputStreamName(outputStream.getId());
+
+                List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
+
+                for (StreamHandler streamHandler : streamHandlerList) {
+                    if (streamHandler instanceof Filter) {
+                        System.out.println("Filter");
+                        setFilter((Filter) streamHandler);
+
+                    } else if (streamHandler instanceof Window) {
+                        System.out.println("Window");
+                        setWindow((Window) streamHandler);
+                    }
                 }
             }
-
         }
     }
 
@@ -116,75 +123,131 @@ public class NewQueryHandler {
 
         List<ExecutionElement> executionElements = siddhiApp.getExecutionElementList();
         List<StreamOutputAttribute> moderatedOutputAttributes = new ArrayList<>();
-        List<OutputAttribute> outputAttributes = new ArrayList<>();
 
-        if (executionElements.get(0) instanceof Query) {
-            Query query = (Query) executionElements.get(0);
-            outputAttributes = query.getSelector().getSelectionList();
+        for (ExecutionElement executionElement : executionElements) {
 
-        }
+            if (executionElement instanceof Query) {
+                Query query = (Query) executionElement;
 
-        if (outputAttributes.size() != 0) {
-            System.out.println(outputAttributes.size());
-            for (OutputAttribute outputAttribute : outputAttributes) {
-                System.out.println(outputAttribute.getExpression());
+                Selector selector = query.getSelector();
 
-                if (outputAttribute.getExpression() instanceof AttributeFunction) {
-                    AttributeFunction attributeFunction = (AttributeFunction) outputAttribute.getExpression();
-                    String functionName = attributeFunction.getName();
-                    System.out.println(functionName);
-                    Expression[] expressions = attributeFunction.getParameters();
-                    if (expressions[0] instanceof Variable) {
-                        Variable variable = (Variable) expressions[0];
-                        System.out.println(variable.getAttributeName());
-                    }
+                List<OutputAttribute> selectionList = selector.getSelectionList();
+                List<Variable> groupByList = selector.getGroupByList();
+                Expression havingExpression = selector.getHavingExpression();
+                Constant limit = selector.getLimit();
+                Constant offset = selector.getOffset();
+                List<OrderByAttribute> orderByAttributeList = selector.getOrderByList();
 
-                } else if (outputAttribute.getExpression() instanceof Variable) {
-                    Variable variable = (Variable) outputAttribute.getExpression();
+                for (OutputAttribute outputAttribute : selectionList) {
+                    Expression outputAttributeExpression = outputAttribute.getExpression();
 
-                    StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
+                    if (outputAttributeExpression instanceof AttributeFunction) {
+                        AttributeFunction attributeFunction = (AttributeFunction) outputAttribute.getExpression();
+                        String functionName = attributeFunction.getName();
+                        //System.out.println(functionName);
+                        Expression[] expressions = attributeFunction.getParameters();
+                        for (Expression expression : expressions)
+                            if (expression instanceof Variable) {
+                                Variable variable = (Variable) expression;
+                                System.out.println(variable.getAttributeName());
+                            }
 
-                    streamAttribute.setName(variable.getAttributeName());
-                    streamAttribute.setRename(outputAttribute.getRename());
-                    for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                        if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
-                            streamAttribute.setType(smartContract.getAttributes().get(i).getType());
+                    } else if (outputAttributeExpression instanceof Variable) {
+                        Variable variable = (Variable) outputAttribute.getExpression();
+
+                        StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
+
+                        streamAttribute.setName(variable.getAttributeName());
+                        streamAttribute.setRename(outputAttribute.getRename());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
+                                streamAttribute.setType(smartContract.getAttributes().get(i).getType());
+                            }
                         }
+
+                    } else if (outputAttribute.getExpression() instanceof Variable) {
+                        Variable variable = (Variable) outputAttribute.getExpression();
+
+                        StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
+
+                        streamAttribute.setName(variable.getAttributeName());
+                        streamAttribute.setRename(outputAttribute.getRename());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
+                                streamAttribute.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        moderatedOutputAttributes.add(streamAttribute);
                     }
 
-                    moderatedOutputAttributes.add(streamAttribute);
+                    this.smartContract.setOutAttributes(moderatedOutputAttributes);
                 }
 
-                this.smartContract.setOutAttributes(moderatedOutputAttributes);
+                for (Variable variable : groupByList) {
+                    System.out.println(variable.getAttributeName());
+                }
+
+//                Process having
+                System.out.println(havingExpression);
+                if (havingExpression instanceof Compare) {
+                    Compare compare = (Compare) havingExpression;
+                    Expression rightExpression = compare.getRightExpression();
+                    Expression leftExpression = compare.getLeftExpression();
+                    Compare.Operator operator = compare.getOperator();
+                    System.out.println("rightExpression " + rightExpression);
+                    System.out.println("leftExpression " + leftExpression);
+
+                } else if (havingExpression instanceof And) {
+                    And and = (And) havingExpression;
+                    Expression leftExpression = and.getLeftExpression();
+                    Expression rightExpression = and.getRightExpression();
+
+                }
+
+                if (limit != null) {
+                    IntConstant intConstant = (IntConstant) limit;
+                    System.out.println(intConstant.getValue());
+                }
+
+                if (offset != null) {
+                    IntConstant intConstant = (IntConstant) offset;
+                    System.out.println(intConstant.getValue());
+                }
+
 
             }
 
-
         }
 
-        Iterator<OutputAttribute> outAttributeIterator = outputAttributes.iterator();
     }
 
     public void setStreamDefinition(SiddhiApp siddhiApp) {
 
         Map<String, StreamDefinition> streamDefinitionMap = siddhiApp.getStreamDefinitionMap();
+// TODO: 7/30/2020 Use a List<List<StreamAttribute>> attributes for List<StreamAttribute> attributes
+//  Implement adding list of stream definition to smart contract(Solidity)
 
-        StreamDefinition streamDefinition = streamDefinitionMap.get(streamDefinitionMap.keySet().toArray()[0]);
+        for (Map.Entry<String, StreamDefinition> streamDefinitionEntry : streamDefinitionMap.entrySet()) {
 
-        Iterator<Attribute> attributeIterator = streamDefinition.getAttributeList().iterator();
+            StreamDefinition streamDefinition = streamDefinitionEntry.getValue();
 
-        List<StreamAttribute> moderatedInputAttributes = new ArrayList<>();
+            List<Attribute> attributeList = streamDefinition.getAttributeList();
+            // TODO: 7/30/2020 add  moderatedInputAttributes in to List
+            List<StreamAttribute> moderatedInputAttributes = new ArrayList<>();
 
-        while (attributeIterator.hasNext()) {
-            Attribute attribute = attributeIterator.next();
+            for(Attribute attribute:attributeList){
 
-            StreamAttribute streamAttribute = new StreamAttribute();
-            streamAttribute.setName(attribute.getName());
-            streamAttribute.setType(getAttributeType(attribute.getType()));
-            moderatedInputAttributes.add(streamAttribute);
+                StreamAttribute streamAttribute = new StreamAttribute();
+                streamAttribute.setName(attribute.getName());
+                streamAttribute.setType(getAttributeType(attribute.getType()));
+                moderatedInputAttributes.add(streamAttribute);
+
+            }
+            smartContract.setAttributes(moderatedInputAttributes);
         }
 
-        smartContract.setAttributes(moderatedInputAttributes);
+
     }
 
     public int getWindowExpression(Expression expression) {
