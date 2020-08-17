@@ -563,7 +563,13 @@ collect
 
 attribute_type
     :STRING     
-    |INT        
+    |INT
+    |INT8
+    |INT16
+    |INT32
+    |INT64
+    |INT128
+    |INT256
     |LONG       
     |FLOAT      
     |DOUBLE     

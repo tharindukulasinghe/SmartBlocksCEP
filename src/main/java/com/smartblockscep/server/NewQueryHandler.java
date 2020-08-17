@@ -3,6 +3,8 @@ package com.smartblockscep.server;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
+import com.jayway.jsonpath.internal.function.numeric.Max;
+import com.jayway.jsonpath.internal.function.numeric.Min;
 import com.smartblockscep.server.api.SiddhiApp;
 import com.smartblockscep.server.api.definition.Attribute;
 import com.smartblockscep.server.api.definition.StreamDefinition;
@@ -20,6 +22,7 @@ import com.smartblockscep.server.api.expression.condition.And;
 import com.smartblockscep.server.api.expression.condition.Compare;
 import com.smartblockscep.server.api.expression.condition.Or;
 import com.smartblockscep.server.api.expression.constant.*;
+import com.smartblockscep.server.AverageFunction;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -33,6 +36,8 @@ import java.util.Map;
 
 public class NewQueryHandler {
     SmartContract smartContract = new SmartContract();
+
+    boolean isfilter = false;
 
     public static SiddhiApp parseMe(String query) {
 
@@ -58,7 +63,13 @@ public class NewQueryHandler {
         setOutputStream(siddhiApp);
 
         MustacheFactory mf = new DefaultMustacheFactory();
-        Mustache m = mf.compile("WindowContract.mustache");
+        Mustache m;
+        if (this.isfilter) {
+            m = mf.compile("SmartContract.mustache");
+        } else {
+            m = mf.compile("WindowContract.mustache");
+        }
+
 
         String output = "";
 
@@ -87,6 +98,7 @@ public class NewQueryHandler {
             if (singleInputStream.getStreamHandlers().size() != 0) {
                 if (singleInputStream.getStreamHandlers().get(0) instanceof Filter) {
                     System.out.println("Filter");
+                    this.isfilter = true;
                     setFilter((Filter) singleInputStream.getStreamHandlers().get(0));
 
                 } else if (singleInputStream.getStreamHandlers().get(0) instanceof Window) {
@@ -107,6 +119,7 @@ public class NewQueryHandler {
     }
 
     public void setWindow(Window window) {
+        smartContract.setHasNoFilter(true);
         int expression = 0;
         expression = getWindowExpression(window.getParameters()[0]);
         smartContract.setWindowLength(expression);
@@ -130,13 +143,92 @@ public class NewQueryHandler {
                 System.out.println(outputAttribute.getExpression());
 
                 if (outputAttribute.getExpression() instanceof AttributeFunction) {
+                    StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
                     AttributeFunction attributeFunction = (AttributeFunction) outputAttribute.getExpression();
                     String functionName = attributeFunction.getName();
+
+                    if (functionName.equals("avg")) {
+                        smartContract.setAverageFunction(true);
+                        AverageFunction averageFunction = new AverageFunction();
+                        Variable variable = (Variable) attributeFunction.getParameters()[0];
+                        averageFunction.setFunctionName(functionName + variable.getAttributeName());
+                        averageFunction.setMember(variable.getAttributeName());
+                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                averageFunction.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        smartContract.addAverageFunction(averageFunction);
+                    } else if (functionName.equals("sum")) {
+                        SumFunction sumFunction = new SumFunction();
+                        Variable variable = (Variable) attributeFunction.getParameters()[0];
+                        sumFunction.setFunctionName(functionName + variable.getAttributeName());
+                        sumFunction.setMember(variable.getAttributeName());
+                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                sumFunction.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        smartContract.addSumFunction(sumFunction);
+                    } else if (functionName.equals("max")) {
+                        MaxFunction maxFunction = new MaxFunction();
+                        Variable variable = (Variable) attributeFunction.getParameters()[0];
+                        maxFunction.setFunctionName(functionName + variable.getAttributeName());
+                        maxFunction.setMember(variable.getAttributeName());
+                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                maxFunction.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        smartContract.addMaxFunction(maxFunction);
+                    } else if (functionName.equals("min")) {
+                        MinFunction minFunction = new MinFunction();
+                        Variable variable = (Variable) attributeFunction.getParameters()[0];
+                        minFunction.setFunctionName(functionName + variable.getAttributeName());
+                        minFunction.setMember(variable.getAttributeName());
+                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                minFunction.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        smartContract.addMinFunction(minFunction);
+                    } else if (functionName.equals("count")) {
+                        CountFunction countFunction = new CountFunction();
+                        Variable variable = (Variable) attributeFunction.getParameters()[0];
+                        countFunction.setFunctionName(functionName + variable.getAttributeName());
+                        countFunction.setMember(variable.getAttributeName());
+                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                countFunction.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        smartContract.addCountFunction(countFunction);
+                    }
+
                     System.out.println(functionName);
                     Expression[] expressions = attributeFunction.getParameters();
                     if (expressions[0] instanceof Variable) {
                         Variable variable = (Variable) expressions[0];
-                        System.out.println(variable.getAttributeName());
+
+                        streamAttribute.setName(variable.getAttributeName());
+                        streamAttribute.setRename(outputAttribute.getRename());
+
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
+                                streamAttribute.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+                        moderatedOutputAttributes.add(streamAttribute);
                     }
 
                 } else if (outputAttribute.getExpression() instanceof Variable) {
@@ -155,14 +247,13 @@ public class NewQueryHandler {
                     moderatedOutputAttributes.add(streamAttribute);
                 }
 
-                this.smartContract.setOutAttributes(moderatedOutputAttributes);
 
             }
 
-
+            moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
+            this.smartContract.setOutAttributes(moderatedOutputAttributes);
         }
 
-        Iterator<OutputAttribute> outAttributeIterator = outputAttributes.iterator();
     }
 
     public void setStreamDefinition(SiddhiApp siddhiApp) {
@@ -213,7 +304,6 @@ public class NewQueryHandler {
     }
 
     public String getFilterExpression(Expression expression) {
-
 
         String event = "incoming" + smartContract.getInputStreamName() + "Event.";
 
@@ -277,7 +367,19 @@ public class NewQueryHandler {
 
     public String getAttributeType(Attribute.Type type) {
         if (type == Attribute.Type.INT) {
-            return "uint";
+            return "uint8";
+        } else if (type == Attribute.Type.INT8) {
+            return "uint8";
+        } else if (type == Attribute.Type.INT16) {
+            return "uint16";
+        } else if (type == Attribute.Type.INT32) {
+            return "uint32";
+        } else if (type == Attribute.Type.INT64) {
+            return "uint64";
+        } else if (type == Attribute.Type.INT128) {
+            return "uint128";
+        } else if (type == Attribute.Type.INT256) {
+            return "uint256";
         } else if (type == Attribute.Type.LONG) {
             return "uint256";
         } else if (type == Attribute.Type.DOUBLE) {

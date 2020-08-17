@@ -2418,6 +2418,18 @@ public class BaseVisitorImpl extends SiddhiQLBaseVisitor {
             return Attribute.Type.STRING;
         } else if (ctx.INT() != null) {
             return Attribute.Type.INT;
+        } else if (ctx.INT8() != null) {
+            return Attribute.Type.INT8;
+        } else if (ctx.INT16() != null) {
+            return Attribute.Type.INT16;
+        } else if (ctx.INT32() != null) {
+            return Attribute.Type.INT32;
+        } else if (ctx.INT64() != null) {
+            return Attribute.Type.INT64;
+        } else if (ctx.INT128() != null) {
+            return Attribute.Type.INT128;
+        } else if (ctx.INT256() != null) {
+            return Attribute.Type.INT256;
         } else if (ctx.LONG() != null) {
             return Attribute.Type.LONG;
         } else if (ctx.FLOAT() != null) {

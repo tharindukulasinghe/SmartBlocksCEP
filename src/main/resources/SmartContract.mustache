@@ -1,38 +1,39 @@
 pragma solidity >=0.4.22 <0.7.0;
+pragma experimental ABIEncoderV2;
 
 contract {{name}} {
 
-    struct {{inputStreamName}}Event {
-        {{#attributes}}
-        {{type}} {{name}}
-        {{/attributes}}
+struct {{inputStreamName}}Event {
+{{#attributes}}
+    {{type}} {{name}};
+{{/attributes}}
 }
 
 struct {{outputStreamName}}Event {
 {{#outAttributes}}
-    {{type}} {{rename}}
+    {{type}} {{rename}};
 {{/outAttributes}}
 }
 
 
 {{outputStreamName}}Event[] public {{outputStreamName}}Events;
 
-function process({{inputStreamName}}Event incoming{{inputStreamName}}Event){
+function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public{
 {{#isHasFilter}}
     if {{{expression}}}{
+    {{outputStreamName}}Events.push({{outputStreamName}}Event({
+    {{#outAttributes}}
+        {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
+    {{/outAttributes}}
+    }));
+    }
+{{/isHasFilter}}
+{{#isHasNoFilter}}
     {{outputStreamName}}Events.push({{outputStreamName}}Event({
     {{#outAttributes}}
         {{rename}}: incoming{{inputStreamName}}Event.{{name}}
     {{/outAttributes}}
     }));
-    }
-{{/isHasFilter}}
-    {{#isHasNoFilter}}
-        {{outputStreamName}}Events.push({{outputStreamName}}Event({
-        {{#outAttributes}}
-            {{rename}}: incoming{{inputStreamName}}Event.{{name}}
-        {{/outAttributes}}
-        }));
-    {{/isHasNoFilter}}
-    }
+{{/isHasNoFilter}}
+}
 }

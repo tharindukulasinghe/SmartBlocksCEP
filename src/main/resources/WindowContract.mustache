@@ -1,50 +1,107 @@
 pragma solidity >=0.4.22 <0.7.0;
+pragma experimental ABIEncoderV2;
 
 contract {{name}} {
 
-{{inputStreamName}}Event[{{windowLength}}] window;
-unit8 index;
+{{inputStreamName}}Event[{{windowLength}}] public window;
+uint256 public index;
 
 struct {{inputStreamName}}Event {
 {{#attributes}}
-    {{type}} {{name}}
+    {{type}} {{name}};
 {{/attributes}}
 }
 
-
 struct {{outputStreamName}}Event {
 {{#outAttributes}}
-    {{type}} {{rename}}
+    {{type}} {{rename}};
 {{/outAttributes}}
 }
 
 {{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
-function get() public return (unit16){
-return window[index];
+function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
+if(index == window.length) {
+index = 0;
 }
-
-function set({{inputStreamName}}Event incoming{{inputStreamName}}Event){
-if(index == window.size) {
-index == 0;
-}
-else {
+window[index] = incomingTempStreamEvent;
 index++;
-}
-window[index] ==
-}
-
-function getHistory() public return(unit16[]){
-unit16[{{windowLength}}] result;
-
-for(int8 i=index; i>0; i--) {
-result[index -1] = vars[i];
-for(int8 i=vars.size-1; i>index; i--)
-result[index + vars.size -1] = vars[i];
-return result;
+check();
 }
 
-function process({{inputStreamName}}Event incoming{{inputStreamName}}Event){
-
+function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public {
+set(incoming{{inputStreamName}}Event);
 }
+
+function check() private {
+if(index == 5){
+processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
+{{#outAttributes}}
+    {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
+{{/outAttributes}}
+}));
+}
+}
+
+{{#averageFunctions}}
+    function {{functionName}}() private view returns ({{type}}) {
+    {{type}} sum = 0;
+    for({{type}} i = 0; i < index; i++){
+    sum += window[i].{{member}};
+    }
+    {{type}} avg = sum / (index);
+
+    return avg;
+    }
+
+{{/averageFunctions}}
+
+{{#sumFunctions}}
+    function {{functionName}}() private view returns ({{type}}) {
+    {{type}} sum = 0;
+    for({{type}} i = 0; i < index; i++){
+    sum += window[i].{{member}};
+    }
+
+    return sum;
+    }
+
+{{/sumFunctions}}
+
+{{#maxFunctions}}
+    function {{functionName}}() private view returns ({{type}}) {
+    {{type}} max = window[0].{{member}};
+    for({{type}} i = 0; i < index; i++){
+    if(window[i].{{member}} > max){
+    max = window[i].{{member}};
+    }
+    }
+
+    return max;
+    }
+
+{{/maxFunctions}}
+
+{{#minFunctions}}
+    function {{functionName}}() private view returns ({{type}}) {
+    {{type}} min = window[0].{{member}};
+    for({{type}} i = 0; i < index; i++){
+    if(window[i].{{member}} < min){
+    min = window[i].{{member}};
+    }
+    }
+
+    return min;
+    }
+
+{{/minFunctions}}
+
+{{#countFunctions}}
+    function {{functionName}}() private view returns ({{type}}) {
+    {{type}} count = window.length;
+    return count;
+    }
+
+{{/countFunctions}}
+
 }

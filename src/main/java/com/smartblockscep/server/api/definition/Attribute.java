@@ -106,6 +106,12 @@ public class Attribute implements SiddhiElement {
     public enum Type {
         STRING,
         INT,
+        INT8,
+        INT16,
+        INT32,
+        INT64,
+        INT128,
+        INT256,
         LONG,
         FLOAT,
         DOUBLE,

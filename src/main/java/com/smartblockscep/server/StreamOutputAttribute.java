@@ -5,6 +5,8 @@ public class StreamOutputAttribute {
     private String rename;
     private String name;
     private String type = "";
+    private String function;
+    private boolean notLastItem = true;
 
     public String getRename() {
         return rename;
@@ -28,5 +30,21 @@ public class StreamOutputAttribute {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getFunction() {
+        return function;
+    }
+
+    public void setFunction(String function) {
+        this.function = function;
+    }
+
+    public boolean isNotLastItem() {
+        return notLastItem;
+    }
+
+    public void setNotLastItem(boolean notLastItem) {
+        this.notLastItem = notLastItem;
     }
 }
