@@ -3,8 +3,6 @@ package com.smartblockscep.server;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
-import com.jayway.jsonpath.internal.function.numeric.Max;
-import com.jayway.jsonpath.internal.function.numeric.Min;
 import com.smartblockscep.server.api.SiddhiApp;
 import com.smartblockscep.server.api.definition.Attribute;
 import com.smartblockscep.server.api.definition.StreamDefinition;
@@ -38,6 +36,7 @@ public class NewQueryHandler {
     SmartContract smartContract = new SmartContract();
 
     boolean isfilter = false;
+    WindowType windowType;
 
     public static SiddhiApp parseMe(String query) {
 
@@ -67,7 +66,13 @@ public class NewQueryHandler {
         if (this.isfilter) {
             m = mf.compile("SmartContract.mustache");
         } else {
-            m = mf.compile("WindowContract.mustache");
+            if(windowType == WindowType.lengthBatch){
+                m = mf.compile("WindowContract.mustache");
+            }
+            else {
+                m = mf.compile("WindowContract.mustache");
+            }
+            m = mf.compile("SlidingWindowContract.mustache");
         }
 
 
@@ -96,6 +101,7 @@ public class NewQueryHandler {
             smartContract.setOutputStreamName(outputStream.getId());
 
             if (singleInputStream.getStreamHandlers().size() != 0) {
+                System.out.println(singleInputStream.getStreamHandlers().get(0));
                 if (singleInputStream.getStreamHandlers().get(0) instanceof Filter) {
                     System.out.println("Filter");
                     this.isfilter = true;
@@ -104,6 +110,10 @@ public class NewQueryHandler {
                 } else if (singleInputStream.getStreamHandlers().get(0) instanceof Window) {
                     System.out.println("Window");
                     setWindow((Window) singleInputStream.getStreamHandlers().get(0));
+                } else {
+                    System.out.println("Filter");
+                    this.isfilter = true;
+                    setFilter((Filter) singleInputStream.getStreamHandlers().get(0));
                 }
             }
 
@@ -120,6 +130,14 @@ public class NewQueryHandler {
 
     public void setWindow(Window window) {
         smartContract.setHasNoFilter(true);
+
+        System.out.println(window.getName());
+        if(window.getName().equals("lengthBatch")){
+            windowType = WindowType.lengthBatch;
+        }
+        else if(window.getName().equals("length")) {
+            windowType = WindowType.length;
+        }
         int expression = 0;
         expression = getWindowExpression(window.getParameters()[0]);
         smartContract.setWindowLength(expression);
@@ -213,6 +231,32 @@ public class NewQueryHandler {
                         }
 
                         smartContract.addCountFunction(countFunction);
+                    } else if (functionName.equals("maxForever")) {
+                        MaxForeverFunction maxForeverFunction = new MaxForeverFunction();
+                        Variable variable = (Variable) attributeFunction.getParameters()[0];
+                        maxForeverFunction.setFunctionName(functionName + variable.getAttributeName());
+                        maxForeverFunction.setMember(variable.getAttributeName());
+                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                maxForeverFunction.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        smartContract.addMaxForeverFunction(maxForeverFunction);
+                    } else if (functionName.equals("minForever")) {
+                        MinForeverFunction minForeverFunction = new MinForeverFunction();
+                        Variable variable = (Variable) attributeFunction.getParameters()[0];
+                        minForeverFunction.setFunctionName(functionName + variable.getAttributeName());
+                        minForeverFunction.setMember(variable.getAttributeName());
+                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                minForeverFunction.setType(smartContract.getAttributes().get(i).getType());
+                            }
+                        }
+
+                        smartContract.addMinForeverFunction(minForeverFunction);
                     }
 
                     System.out.println(functionName);

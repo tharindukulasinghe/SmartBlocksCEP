@@ -18,13 +18,14 @@ public class SmartContract {
     private boolean hasFilter;
     private boolean hasNoFilter;
     private int windowLength;
-
     private boolean averageFunction = false;
     private List<AverageFunction> averageFunctions = new ArrayList<>();
     private List<SumFunction> sumFunctions = new ArrayList<>();
     private List<MaxFunction> maxFunctions = new ArrayList<>();
     private List<MinFunction> minFunctions = new ArrayList<>();
     private List<CountFunction> countFunctions = new ArrayList<>();
+    private List<MaxForeverFunction> maxForeverFunctions = new ArrayList<>();
+    private List<MinForeverFunction> minForeverFunctions = new ArrayList<>();
 
     public String getOutputStreamName() {
         return outputStreamName;
@@ -180,5 +181,29 @@ public class SmartContract {
 
     public void addCountFunction(CountFunction countFunction) {
         this.countFunctions.add(countFunction);
+    }
+
+    public void addMaxForeverFunction(MaxForeverFunction maxForeverFunction) {
+        this.maxForeverFunctions.add(maxForeverFunction);
+    }
+
+    public List<MaxForeverFunction> getMaxForeverFunctions() {
+        return maxForeverFunctions;
+    }
+
+    public void setMaxForeverFunctions(List<MaxForeverFunction> maxForeverFunctions) {
+        this.maxForeverFunctions = maxForeverFunctions;
+    }
+
+    public void addMinForeverFunction(MinForeverFunction minForeverFunction) {
+        this.minForeverFunctions.add(minForeverFunction);
+    }
+
+    public List<MinForeverFunction> getMinForeverFunctions() {
+        return minForeverFunctions;
+    }
+
+    public void setMinForeverFunctions(List<MinForeverFunction> minForeverFunctions) {
+        this.minForeverFunctions = minForeverFunctions;
     }
 }

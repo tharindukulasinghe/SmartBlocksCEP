@@ -197,19 +197,19 @@ public class QueryHandler {
         if (executionElements.get(0) instanceof Query) {
 
             Query query = (Query) executionElements.get(0);
-            SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
-            OutputStream outputStream = query.getOutputStream();
-            System.out.println(outputStream.getId());
-            smartContract.setInputStreamName(singleInputStream.getStreamId());
-            smartContract.setOutputStreamName(outputStream.getId());
+                SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
+                OutputStream outputStream = query.getOutputStream();
+                System.out.println(outputStream.getId());
+                smartContract.setInputStreamName(singleInputStream.getStreamId());
+                smartContract.setOutputStreamName(outputStream.getId());
 
-            if (singleInputStream.getStreamHandlers().size() == 0) {
-                this.smartContract.setHasFilter(false);
-                this.smartContract.setHasNoFilter(true);
-            } else {
-                this.smartContract.setHasFilter(true);
-                this.smartContract.setHasNoFilter(false);
-                filterExpression = getFilterExpression(singleInputStream.getStreamHandlers().get(0).getParameters()[0]);
+                if (singleInputStream.getStreamHandlers().size() == 0) {
+                    this.smartContract.setHasFilter(false);
+                    this.smartContract.setHasNoFilter(true);
+                } else {
+                    this.smartContract.setHasFilter(true);
+                    this.smartContract.setHasNoFilter(false);
+                    filterExpression = getFilterExpression(singleInputStream.getStreamHandlers().get(0).getParameters()[0]);
                 this.smartContract.setExpression(filterExpression);
             }
 
