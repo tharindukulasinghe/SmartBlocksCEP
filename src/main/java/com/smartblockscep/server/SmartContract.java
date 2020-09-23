@@ -1,7 +1,5 @@
 package com.smartblockscep.server;
 
-import com.smartblockscep.server.AverageFunction;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,13 +16,14 @@ public class SmartContract {
     private boolean hasFilter;
     private boolean hasNoFilter;
     private int windowLength;
-
     private boolean averageFunction = false;
     private List<AverageFunction> averageFunctions = new ArrayList<>();
     private List<SumFunction> sumFunctions = new ArrayList<>();
     private List<MaxFunction> maxFunctions = new ArrayList<>();
     private List<MinFunction> minFunctions = new ArrayList<>();
     private List<CountFunction> countFunctions = new ArrayList<>();
+    private List<String> inputStreamNames;
+    private List<String> outputStreamNames;
 
     public String getOutputStreamName() {
         return outputStreamName;
@@ -180,5 +179,21 @@ public class SmartContract {
 
     public void addCountFunction(CountFunction countFunction) {
         this.countFunctions.add(countFunction);
+    }
+
+    public void setInputStreamNames(String inputStreamName){
+        this.inputStreamNames.add(inputStreamName);
+    }
+
+    public List<String> getInputStreamNames(){
+        return this.inputStreamNames;
+    }
+
+    public void setOutputStreamNames(String outputStreamName){
+        this.inputStreamNames.add(outputStreamName);
+    }
+
+    public List<String> getOutputStreamNames(){
+        return this.outputStreamNames;
     }
 }

@@ -3,8 +3,6 @@ package com.smartblockscep.server;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
-import com.jayway.jsonpath.internal.function.numeric.Max;
-import com.jayway.jsonpath.internal.function.numeric.Min;
 import com.smartblockscep.server.api.SiddhiApp;
 import com.smartblockscep.server.api.definition.Attribute;
 import com.smartblockscep.server.api.definition.StreamDefinition;
@@ -12,7 +10,10 @@ import com.smartblockscep.server.api.execution.ExecutionElement;
 import com.smartblockscep.server.api.execution.query.Query;
 import com.smartblockscep.server.api.execution.query.input.handler.Filter;
 import com.smartblockscep.server.api.execution.query.input.handler.Window;
+import com.smartblockscep.server.api.execution.query.input.stream.InputStream;
+import com.smartblockscep.server.api.execution.query.input.stream.JoinInputStream;
 import com.smartblockscep.server.api.execution.query.input.stream.SingleInputStream;
+import com.smartblockscep.server.api.execution.query.output.stream.InsertIntoStream;
 import com.smartblockscep.server.api.execution.query.output.stream.OutputStream;
 import com.smartblockscep.server.api.execution.query.selection.OutputAttribute;
 import com.smartblockscep.server.api.expression.AttributeFunction;
@@ -22,7 +23,6 @@ import com.smartblockscep.server.api.expression.condition.And;
 import com.smartblockscep.server.api.expression.condition.Compare;
 import com.smartblockscep.server.api.expression.condition.Or;
 import com.smartblockscep.server.api.expression.constant.*;
-import com.smartblockscep.server.AverageFunction;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -37,7 +37,7 @@ import java.util.Map;
 public class NewQueryHandler {
     SmartContract smartContract = new SmartContract();
 
-    boolean isfilter = false;
+    boolean isFilter = false;
 
     public static SiddhiApp parseMe(String query) {
 
@@ -64,7 +64,7 @@ public class NewQueryHandler {
 
         MustacheFactory mf = new DefaultMustacheFactory();
         Mustache m;
-        if (this.isfilter) {
+        if (this.isFilter) {
             m = mf.compile("SmartContract.mustache");
         } else {
             m = mf.compile("WindowContract.mustache");
@@ -84,30 +84,66 @@ public class NewQueryHandler {
     }
 
     public void setExpression(SiddhiApp siddhiApp) {
-        String text = siddhiApp.toString();
-        //System.out.println(text);
-        List<ExecutionElement> executionElements = siddhiApp.getExecutionElementList();
-        String expression = "";
-        if (executionElements.get(0) instanceof Query) {
-            Query query = (Query) executionElements.get(0);
-            SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
-            OutputStream outputStream = query.getOutputStream();
-            smartContract.setInputStreamName(singleInputStream.getStreamId());
-            smartContract.setOutputStreamName(outputStream.getId());
 
-            if (singleInputStream.getStreamHandlers().size() != 0) {
-                if (singleInputStream.getStreamHandlers().get(0) instanceof Filter) {
-                    System.out.println("Filter");
-                    this.isfilter = true;
-                    setFilter((Filter) singleInputStream.getStreamHandlers().get(0));
+        List<ExecutionElement> executionElementList = siddhiApp.getExecutionElementList();
 
-                } else if (singleInputStream.getStreamHandlers().get(0) instanceof Window) {
-                    System.out.println("Window");
-                    setWindow((Window) singleInputStream.getStreamHandlers().get(0));
+        for (ExecutionElement executionElement : executionElementList) {
+            // handling execution element
+            if (executionElement instanceof Query) {
+
+                Query query = (Query) executionElement;
+
+                InputStream inputStream = query.getInputStream();
+                OutputStream outputStream = query.getOutputStream();
+                System.out.println(query);
+
+                /* handling input stream*/
+                if (inputStream instanceof JoinInputStream) {
+                    System.out.println(inputStream);
+                    InputStream leftInputStream = ((JoinInputStream) inputStream).getLeftInputStream();
+                    System.out.println("leftInputStream");
+                    System.out.println(leftInputStream);
+
+                    InputStream rightInputStream = ((JoinInputStream) inputStream).getRightInputStream();
+                    System.out.println("rightInputStream");
+                    System.out.println(rightInputStream);
+                    // todo implement logic for join input stream
+
+                } else if (inputStream instanceof SingleInputStream) {
+                    //System.out.println(inputStream);
+                    SingleInputStream singleInputStream = (SingleInputStream) inputStream;
+                    System.out.println(singleInputStream.getStreamId());
+                    System.out.println(singleInputStream.getAllStreamIds());
+
+                    smartContract.setInputStreamName(singleInputStream.getStreamId());
+                    System.out.println(outputStream.getId());
+//                smartContract.setOutputStreamName(outputStream.getId());
+
+//                    smartContract.setInputStreamNames(singleInputStream.getStreamId());
+//                    smartContract.setOutputStreamNames(outputStream.getId());
+//
+//                    List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
+//
+//                    for (StreamHandler streamHandler : streamHandlerList) {
+//                        if (streamHandler instanceof Filter) {
+//                            setFilter((Filter) streamHandler);
+//
+//                        } else if (streamHandler instanceof Window) {
+//                            setWindow((Window) streamHandler);
+//                        }
+//                    }
                 }
-            }
 
+                if (outputStream instanceof InsertIntoStream) {
+                    System.out.println("InsertIntoStream");
+                    System.out.println(outputStream);
+                }
+
+
+            }
         }
+
+
     }
 
     public void setFilter(Filter filter) {

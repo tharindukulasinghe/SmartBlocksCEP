@@ -19,21 +19,14 @@ public class QueryController {
     @PostMapping("/query")
     public Response requestQuery(@RequestBody BaseQuery query) {
 
-//        QueryHandler queryHandler = new QueryHandler();
-//
-//        SiddhiApp siddhiApp = queryHandler.parse(query.getQuery());
-//
-//        String out = queryHandler.compute(siddhiApp);
         NewQueryHandler queryHandler = new NewQueryHandler();
 
-        SiddhiApp siddhiApp = queryHandler.parseMe(query.getQuery());
+        SiddhiApp siddhiApp = NewQueryHandler.parseMe(query.getQuery());
 
 
         String out = queryHandler.computeWindow(siddhiApp);
 
-        Response response = new Response(false, out);
-
-        return response;
+        return new Response(false, out);
     }
 
 }
