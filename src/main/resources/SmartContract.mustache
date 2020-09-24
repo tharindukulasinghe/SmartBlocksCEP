@@ -2,12 +2,13 @@ pragma solidity >=0.4.22 <0.7.0;
 pragma experimental ABIEncoderV2;
 
 contract {{name}} {
-
+{{#inputStreamEventList}}
 struct {{inputStreamName}}Event {
-{{#attributes}}
+{{#streamAttributeList}}
     {{type}} {{name}};
-{{/attributes}}
+{{/streamAttributeList}}
 }
+{{/inputStreamEventList}}
 
 struct {{outputStreamName}}Event {
 {{#outAttributes}}
