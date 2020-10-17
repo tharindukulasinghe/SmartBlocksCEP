@@ -2,6 +2,7 @@ package com.smartblockscep.server.rest;
 
 import com.smartblockscep.server.BaseQuery;
 import com.smartblockscep.server.NewQueryHandler;
+import com.smartblockscep.server.Response;
 import com.smartblockscep.server.api.SiddhiApp;
 import org.springframework.web.bind.annotation.*;
 

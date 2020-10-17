@@ -26,6 +26,7 @@ import com.smartblockscep.server.api.expression.condition.And;
 import com.smartblockscep.server.api.expression.condition.Compare;
 import com.smartblockscep.server.api.expression.condition.Or;
 import com.smartblockscep.server.api.expression.constant.*;
+import com.smartblockscep.server.test.CodeGenerator;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -60,10 +61,12 @@ public class NewQueryHandler {
     }
 
     public String computeWindow(SiddhiApp siddhiApp) {
-        setStreamDefinition(siddhiApp);
-        setExpression(siddhiApp);
+        //setStreamDefinition(siddhiApp);
+        //setExpression(siddhiApp);
 //
-        setOutputStream(siddhiApp);
+        //setOutputStream(siddhiApp);
+        CodeGenerator codeGenerator = new CodeGenerator();
+        codeGenerator.processOutput(siddhiApp);
 //
         MustacheFactory mf = new DefaultMustacheFactory();
         Mustache m;
@@ -85,6 +88,8 @@ public class NewQueryHandler {
         }
         return output;
     }
+
+
 
     public void setExpression(SiddhiApp siddhiApp) {
 
@@ -238,7 +243,7 @@ public class NewQueryHandler {
     }
 
     public void setOutputStream(SiddhiApp siddhiApp) {
-
+        //System.out.println(siddhiApp.toString());
         List<ExecutionElement> executionElementList = siddhiApp.getExecutionElementList();
 
         for (ExecutionElement executionElement : executionElementList) {
@@ -247,9 +252,10 @@ public class NewQueryHandler {
 
                 List<OutputAttribute> outputAttributeList = query.getSelector().getSelectionList();
                 List<StreamOutputAttribute> moderatedOutputAttributes = new ArrayList<>();
-                System.out.println(outputAttributeList);
+                //System.out.println(outputAttributeList);
+
                 for (OutputAttribute outputAttribute : outputAttributeList) {
-                    System.out.println(outputAttribute.getExpression());
+                    System.out.println(outputAttribute);
 
                     if (outputAttribute.getExpression() instanceof AttributeFunction) {
                         StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
