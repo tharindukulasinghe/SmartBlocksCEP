@@ -65,28 +65,30 @@ public class NewQueryHandler {
         //setExpression(siddhiApp);
 //
         //setOutputStream(siddhiApp);
-        CodeGenerator codeGenerator = new CodeGenerator();
-        codeGenerator.processOutput(siddhiApp);
+
 //
-        MustacheFactory mf = new DefaultMustacheFactory();
-        Mustache m;
-//        if (this.isFilter) {
-        m = mf.compile("SmartContract.mustache");
+//        MustacheFactory mf = new DefaultMustacheFactory();
+//        Mustache m;
+////        if (this.isFilter) {
+//        m = mf.compile("SmartContract.mustache");
 //        } else {
 //            m = mf.compile("WindowContract.mustache");
 //        }
 
 
-        String output = "";
+//        String output = "";
+//
+//        try {
+//            StringWriter writer = new StringWriter();
+//            m.execute(writer, smartContract).flush();
+//            output = writer.toString();
+//        } catch (Exception e) {
+//
+//        }
+//        return output;
 
-        try {
-            StringWriter writer = new StringWriter();
-            m.execute(writer, smartContract).flush();
-            output = writer.toString();
-        } catch (Exception e) {
-
-        }
-        return output;
+        CodeGenerator codeGenerator = new CodeGenerator();
+         return codeGenerator.processOutput(siddhiApp);
     }
 
 

@@ -1,5 +1,8 @@
 package com.smartblockscep.server.test;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
 import com.smartblockscep.server.*;
 import com.smartblockscep.server.api.SiddhiApp;
 import com.smartblockscep.server.api.definition.Attribute;
@@ -18,33 +21,37 @@ import com.smartblockscep.server.api.execution.query.selection.Selector;
 import com.smartblockscep.server.api.expression.AttributeFunction;
 import com.smartblockscep.server.api.expression.Expression;
 import com.smartblockscep.server.api.expression.Variable;
-import com.smartblockscep.server.api.expression.constant.Constant;
-import com.smartblockscep.server.api.expression.constant.TimeConstant;
+import com.smartblockscep.server.api.expression.condition.And;
+import com.smartblockscep.server.api.expression.condition.Compare;
+import com.smartblockscep.server.api.expression.condition.Or;
+import com.smartblockscep.server.api.expression.constant.*;
 import com.smartblockscep.server.api.expression.math.Subtract;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class CodeGenerator {
     SolidityContract solidityContract = new SolidityContract();
 
-    public void processOutput(SiddhiApp siddhiApp) {
-        System.out.println(siddhiApp);
+    public String processOutput(SiddhiApp siddhiApp) {
+        //System.out.println(siddhiApp);
+
         // process stream definition
         Map<String, StreamDefinition> streamDefinitionMap = siddhiApp.getStreamDefinitionMap();
         processStreamDefinition(streamDefinitionMap);
 
         //process execution element list
         List<ExecutionElement> executionElementList = siddhiApp.getExecutionElementList();
-
         for (ExecutionElement executionElement : executionElementList) {
             if (executionElement instanceof Query) {
                 Query query = (Query) executionElement;
 
                 // handle input stream
                 InputStream inputStream = query.getInputStream();
-                // processInputStream(inputStream);
+                processInputStream(inputStream);
 
                 // handle selector
                 Selector selector = query.getSelector();
@@ -52,8 +59,24 @@ public class CodeGenerator {
 
                 // handle output stream
                 OutputStream outputStream = query.getOutputStream();
+                System.out.println(outputStream.toString());
+                solidityContract.setOutputStreamName(outputStream.getId());
             }
         }
+
+        MustacheFactory mf = new DefaultMustacheFactory();
+        Mustache m = mf.compile("SolidityContract.mustache");
+
+        String output = "";
+
+        try {
+            StringWriter writer = new StringWriter();
+            m.execute(writer, solidityContract).flush();
+            output = writer.toString();
+        } catch (Exception e) {
+
+        }
+        return output;
     }
 
     private void processStreamDefinition(Map<String, StreamDefinition> streamDefinitionMap) {
@@ -77,6 +100,7 @@ public class CodeGenerator {
                 StreamAttribute streamAttribute = new StreamAttribute();
                 streamAttribute.setName(attribute.getName());
                 streamAttribute.setType(getAttributeType(attribute.getType()));
+
                 moderatedInputAttributes.add(streamAttribute);
 
                 //todo implement a better way to get output attribute types
@@ -109,16 +133,14 @@ public class CodeGenerator {
         } else if (inputStream instanceof SingleInputStream) {
             //System.out.println(inputStream);
             SingleInputStream singleInputStream = (SingleInputStream) inputStream;
-            // System.out.println(singleInputStream.getStreamId());
-            // System.out.println(singleInputStream.getAllStreamIds());
-
-            //smartContract.setInputStreamName(singleInputStream.getStreamId());
 
             List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
+            String singleInputStreamStreamId=singleInputStream.getStreamId();
 
             for (StreamHandler streamHandler : streamHandlerList) {
                 if (streamHandler instanceof Filter) {
-                    //setFilter((Filter) streamHandler);
+                    Filter filter = (Filter) streamHandler;
+                    processFilter(filter,singleInputStreamStreamId);
 
                 } else if (streamHandler instanceof Window) {
                     //setWindow((Window) streamHandler);
@@ -253,7 +275,6 @@ public class CodeGenerator {
 
             // get expression
             Expression expression = outputAttribute.getExpression();
-
             if (expression instanceof AttributeFunction) {
 
                 StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
@@ -359,43 +380,45 @@ public class CodeGenerator {
                 }
 
             } else if (expression instanceof Variable) {
-                System.out.println(expression);
+                //System.out.println(expression);
                 Variable variable = (Variable) expression;
 
+                String streamId = variable.getStreamId();
+                //System.out.println(streamId);
                 StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
 
                 streamAttribute.setName(variable.getAttributeName());
                 streamAttribute.setRename(outputAttribute.getRename());
+                if(streamId == null){
+                    List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                    List<StreamAttribute> streamAttributeList =inputStreamEventList.get(0).getStreamAttributeList();
+                    for (StreamAttribute attribute : streamAttributeList) {
+                        if (attribute.getName().equals(streamAttribute.getName())) {
+                            streamAttribute.setType(attribute.getType());
+                        }
+                    }
+                }
 
-//                for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-//                    if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
-//                        streamAttribute.setType(smartContract.getAttributes().get(i).getType());
-//                    }
-//                }
                 moderatedOutputAttributes.add(streamAttribute);
-            }
-            else if (expression instanceof Subtract){
+            } else if (expression instanceof Subtract) {
                 Subtract subtract = (Subtract) expression;
                 Expression leftValue = subtract.getLeftValue();
                 Expression rightValue = subtract.getRightValue();
 
                 System.out.println(rightValue);
 
-                if(leftValue instanceof Variable){
+                if (leftValue instanceof Variable) {
                     Variable variable = (Variable) leftValue;
                 }
 
-                if(rightValue instanceof Variable){
+                if (rightValue instanceof Variable) {
                     Variable variable = (Variable) rightValue;
                 }
             }
-            System.out.println(expression.toString());
-            System.out.println(expression.getClass());
         }
 
-
         moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
-        //this.smartContract.setOutAttributes(moderatedOutputAttributes);
+        this.solidityContract.setStreamOutputAttributeList(moderatedOutputAttributes);
     }
 
     public String getAttributeType(Attribute.Type type) {
@@ -421,6 +444,97 @@ public class CodeGenerator {
             return "string";
         } else if (type == Attribute.Type.BOOL) {
             return "bool";
+        } else {
+            return "";
+        }
+    }
+
+    public void processFilter(Filter filter,String streamId) {
+        Expression[] expressions = filter.getParameters();
+        List<FilterExpression> filterExpressionList = new ArrayList<>();
+
+        for(Expression expression : expressions){
+            FilterExpression filterExpression = new FilterExpression();
+            String output = getFilterExpression(expression,streamId);
+            filterExpression.setInputStreamName(streamId);
+            filterExpression.setExpression(output);
+            filterExpressionList.add(filterExpression);
+        }
+        solidityContract.setFilterExpressionList(filterExpressionList);
+    }
+
+    public String getFilterExpression(Expression expression,String streamId) {
+
+        String event = "incoming" + streamId + "Event.";
+        String filterExpression = "";
+
+        if (expression instanceof And) {
+            And andExpression = (And) expression;
+            String leftExpression = getFilterExpression(andExpression.getLeftExpression(),streamId);
+            String rightExpression = getFilterExpression(andExpression.getRightExpression(),streamId);
+
+            return "(" + leftExpression + " && " + rightExpression + ")";
+        } else if (expression instanceof Or) {
+            Or orExpression = (Or) expression;
+            String leftExpression = getFilterExpression(orExpression.getLeftExpression(),streamId);
+            String rightExpression = getFilterExpression(orExpression.getRightExpression(),streamId);
+
+            return "(" + leftExpression + " || " + rightExpression + ")";
+        } else if (expression instanceof Compare) {
+            Compare compareExpression = (Compare) expression;
+            String leftExpression = getFilterExpression(compareExpression.getLeftExpression(),streamId);
+            String rightExpression = getFilterExpression(compareExpression.getRightExpression(),streamId);
+            String operatorString = getOperatorString(compareExpression.getOperator());
+            return "(" + leftExpression + " " + operatorString + " " + rightExpression + ")";
+
+        } else if (expression instanceof BoolConstant) {
+            BoolConstant boolExpression = (BoolConstant) expression;
+            return "" + boolExpression.getValue();
+
+        } else if (expression instanceof DoubleConstant) {
+            DoubleConstant doubleExpression = (DoubleConstant) expression;
+            return "" + doubleExpression.getValue();
+
+        } else if (expression instanceof FloatConstant) {
+            FloatConstant constant = (FloatConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof IntConstant) {
+            IntConstant constant = (IntConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof LongConstant) {
+            LongConstant constant = (LongConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof StringConstant) {
+            StringConstant constant = (StringConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof TimeConstant) {
+            TimeConstant constant = (TimeConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof Variable) {
+            Variable constant = (Variable) expression;
+            return event + constant.getAttributeName();
+
+        }
+
+        return filterExpression;
+    }
+
+    public String getOperatorString(Compare.Operator operator) {
+        if (operator == Compare.Operator.EQUAL) {
+            return "=";
+        } else if (operator == Compare.Operator.GREATER_THAN) {
+            return ">";
+        } else if (operator == Compare.Operator.GREATER_THAN_EQUAL) {
+            return ">=";
+        } else if (operator == Compare.Operator.LESS_THAN) {
+            return "<";
+        } else if (operator == Compare.Operator.LESS_THAN_EQUAL) {
+            return "<=";
         } else {
             return "";
         }
