@@ -9,8 +9,14 @@ import com.smartblockscep.server.api.definition.StreamDefinition;
 import com.smartblockscep.server.api.execution.ExecutionElement;
 import com.smartblockscep.server.api.execution.query.Query;
 import com.smartblockscep.server.api.execution.query.input.handler.Filter;
+import com.smartblockscep.server.api.execution.query.input.handler.StreamHandler;
 import com.smartblockscep.server.api.execution.query.input.handler.Window;
-import com.smartblockscep.server.api.execution.query.input.stream.SingleInputStream;
+import com.smartblockscep.server.api.execution.query.input.state.EveryStateElement;
+import com.smartblockscep.server.api.execution.query.input.state.NextStateElement;
+import com.smartblockscep.server.api.execution.query.input.state.StateElement;
+import com.smartblockscep.server.api.execution.query.input.state.StreamStateElement;
+import com.smartblockscep.server.api.execution.query.input.stream.*;
+import com.smartblockscep.server.api.execution.query.output.stream.InsertIntoStream;
 import com.smartblockscep.server.api.execution.query.output.stream.OutputStream;
 import com.smartblockscep.server.api.execution.query.selection.OutputAttribute;
 import com.smartblockscep.server.api.expression.AttributeFunction;
@@ -20,7 +26,7 @@ import com.smartblockscep.server.api.expression.condition.And;
 import com.smartblockscep.server.api.expression.condition.Compare;
 import com.smartblockscep.server.api.expression.condition.Or;
 import com.smartblockscep.server.api.expression.constant.*;
-import com.smartblockscep.server.AverageFunction;
+import com.smartblockscep.server.test.CodeGenerator;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -28,15 +34,14 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class NewQueryHandler {
     SmartContract smartContract = new SmartContract();
 
-    boolean isfilter = false;
-    WindowType windowType;
+    boolean isFilter = false;
 
     public static SiddhiApp parseMe(String query) {
 
@@ -56,24 +61,20 @@ public class NewQueryHandler {
     }
 
     public String computeWindow(SiddhiApp siddhiApp) {
-        setStreamDefinition(siddhiApp);
-        setExpression(siddhiApp);
-
-        setOutputStream(siddhiApp);
-
+        //setStreamDefinition(siddhiApp);
+        //setExpression(siddhiApp);
+//
+        //setOutputStream(siddhiApp);
+        CodeGenerator codeGenerator = new CodeGenerator();
+        codeGenerator.processOutput(siddhiApp);
+//
         MustacheFactory mf = new DefaultMustacheFactory();
         Mustache m;
-        if (this.isfilter) {
-            m = mf.compile("SmartContract.mustache");
-        } else {
-            if(windowType == WindowType.lengthBatch){
-                m = mf.compile("WindowContract.mustache");
-            }
-            else {
-                m = mf.compile("WindowContract.mustache");
-            }
-            m = mf.compile("SlidingWindowContract.mustache");
-        }
+//        if (this.isFilter) {
+        m = mf.compile("SmartContract.mustache");
+//        } else {
+//            m = mf.compile("WindowContract.mustache");
+//        }
 
 
         String output = "";
@@ -88,39 +89,145 @@ public class NewQueryHandler {
         return output;
     }
 
+
+
     public void setExpression(SiddhiApp siddhiApp) {
-        String text = siddhiApp.toString();
-        //System.out.println(text);
-        List<ExecutionElement> executionElements = siddhiApp.getExecutionElementList();
-        String expression = "";
-        if (executionElements.get(0) instanceof Query) {
-            Query query = (Query) executionElements.get(0);
-            SingleInputStream singleInputStream = (SingleInputStream) query.getInputStream();
-            OutputStream outputStream = query.getOutputStream();
-            smartContract.setInputStreamName(singleInputStream.getStreamId());
-            smartContract.setOutputStreamName(outputStream.getId());
 
-            if (singleInputStream.getStreamHandlers().size() != 0) {
-                System.out.println(singleInputStream.getStreamHandlers().get(0));
-                if (singleInputStream.getStreamHandlers().get(0) instanceof Filter) {
-                    System.out.println("Filter");
-                    this.isfilter = true;
-                    setFilter((Filter) singleInputStream.getStreamHandlers().get(0));
+        List<ExecutionElement> executionElementList = siddhiApp.getExecutionElementList();
 
-                } else if (singleInputStream.getStreamHandlers().get(0) instanceof Window) {
-                    System.out.println("Window");
-                    setWindow((Window) singleInputStream.getStreamHandlers().get(0));
-                } else {
-                    System.out.println("Filter");
-                    this.isfilter = true;
-                    setFilter((Filter) singleInputStream.getStreamHandlers().get(0));
+        for (ExecutionElement executionElement : executionElementList) {
+            // handling execution element
+            //System.out.println(executionElement);
+            if (executionElement instanceof Query) {
+
+                Query query = (Query) executionElement;
+
+                InputStream inputStream = query.getInputStream();
+                OutputStream outputStream = query.getOutputStream();
+                //System.out.println(query);
+
+                /* handling input stream*/
+                if (inputStream instanceof JoinInputStream) {
+                    System.out.println(inputStream);
+                    InputStream leftInputStream = ((JoinInputStream) inputStream).getLeftInputStream();
+                    System.out.println("leftInputStream");
+                    System.out.println(leftInputStream);
+
+                    InputStream rightInputStream = ((JoinInputStream) inputStream).getRightInputStream();
+                    System.out.println("rightInputStream");
+                    System.out.println(rightInputStream);
+                    // todo implement logic for join input stream
+
+                } else if (inputStream instanceof SingleInputStream) {
+                    //System.out.println(inputStream);
+                    SingleInputStream singleInputStream = (SingleInputStream) inputStream;
+                    System.out.println(singleInputStream.getStreamId());
+                    System.out.println(singleInputStream.getAllStreamIds());
+
+                    smartContract.setInputStreamName(singleInputStream.getStreamId());
+
+                    List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
+
+                    for (StreamHandler streamHandler : streamHandlerList) {
+                        if (streamHandler instanceof Filter) {
+                            setFilter((Filter) streamHandler);
+
+                        } else if (streamHandler instanceof Window) {
+                            setWindow((Window) streamHandler);
+                        }
+                    }
+
+                } else if (inputStream instanceof StateInputStream) {
+                    StateInputStream stateInputStream = (StateInputStream) inputStream;
+                    StateInputStream.Type type = stateInputStream.getStateType();
+
+                    //smartContract.setInputStreamNames(stateInputStream.getUniqueStreamIds());
+
+                    if (type.equals(StateInputStream.Type.PATTERN)) {
+
+                        StateElement stateElement = stateInputStream.getStateElement();
+                        //System.out.println(stateInputStream);
+                        TimeConstant timeConstant = stateInputStream.getWithinTime();
+                        //System.out.println(timeConstant);
+
+                        if (stateElement instanceof NextStateElement) {
+                            NextStateElement nextStateElement = (NextStateElement) stateElement;
+                            StateElement stateElement1 = nextStateElement.getStateElement();
+                            StateElement stateElementNextStateElement = nextStateElement.getNextStateElement();
+
+                            if (stateElement1 instanceof EveryStateElement) {
+                                EveryStateElement everyStateElement = (EveryStateElement) stateElement1;
+                                StateElement stateElement2 = everyStateElement.getStateElement();
+
+                                if (stateElement2 instanceof StreamStateElement) {
+                                    StreamStateElement streamStateElement = (StreamStateElement) stateElement2;
+                                    BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
+
+//                                    System.out.println(basicSingleInputStream);
+//                                    System.out.println("StreamId: " + basicSingleInputStream.getStreamId());
+//                                    System.out.println("ReferenceId: " + basicSingleInputStream.getStreamReferenceId());
+
+                                    List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
+                                    for (StreamHandler streamHandler : streamHandlerList) {
+                                        if (streamHandler instanceof Filter) {
+                                            System.out.println(streamHandler);
+                                            // todo implement filter method
+                                            setFilter((Filter) streamHandler);
+                                        }
+                                    }
+
+                                }
+                            }
+
+                            if(stateElementNextStateElement instanceof StreamStateElement){
+                                StreamStateElement streamStateElement = (StreamStateElement) stateElementNextStateElement;
+                                BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
+
+                                System.out.println(basicSingleInputStream);
+                                System.out.println("StreamId: " + basicSingleInputStream.getStreamId());
+                                System.out.println("ReferenceId: " + basicSingleInputStream.getStreamReferenceId());
+
+                                List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
+                                for (StreamHandler streamHandler : streamHandlerList) {
+                                    if (streamHandler instanceof Filter) {
+                                        System.out.println(streamHandler);
+                                        // todo implement filter method
+                                        setFilter((Filter) streamHandler);
+                                    }
+                                }
+                            }
+
+                            //nextStateElement1.
+                            //System.out.println(stateElement1);
+                        }
+                    } else if (type.equals(StateInputStream.Type.SEQUENCE)) {
+                        System.out.println(StateInputStream.Type.SEQUENCE);
+                    }
                 }
-            }
 
+                if (outputStream instanceof InsertIntoStream) {
+                    //System.out.println("InsertIntoStream");
+                    //System.out.println(outputStream.getId());
+
+                    smartContract.setOutputStreamName(outputStream.getId());
+
+                    //smartContract.setInputStreamNames(singleInputStream.getStreamId());
+                    //smartContract.setOutputStreamNames(outputStream.getId());
+
+
+                }
+                //System.out.println(outputStream);
+
+
+            }
         }
+
+
     }
 
     public void setFilter(Filter filter) {
+        //System.out.println("filter");
+        System.out.println(Arrays.toString(filter.getParameters()));
         String expression = "";
         this.smartContract.setHasFilter(true);
         this.smartContract.setHasNoFilter(false);
@@ -130,143 +237,122 @@ public class NewQueryHandler {
 
     public void setWindow(Window window) {
         smartContract.setHasNoFilter(true);
-
-        System.out.println(window.getName());
-        if(window.getName().equals("lengthBatch")){
-            windowType = WindowType.lengthBatch;
-        }
-        else if(window.getName().equals("length")) {
-            windowType = WindowType.length;
-        }
         int expression = 0;
         expression = getWindowExpression(window.getParameters()[0]);
         smartContract.setWindowLength(expression);
     }
 
     public void setOutputStream(SiddhiApp siddhiApp) {
+        //System.out.println(siddhiApp.toString());
+        List<ExecutionElement> executionElementList = siddhiApp.getExecutionElementList();
 
-        List<ExecutionElement> executionElements = siddhiApp.getExecutionElementList();
-        List<StreamOutputAttribute> moderatedOutputAttributes = new ArrayList<>();
-        List<OutputAttribute> outputAttributes = new ArrayList<>();
+        for (ExecutionElement executionElement : executionElementList) {
+            if (executionElement instanceof Query) {
+                Query query = (Query) executionElement;
 
-        if (executionElements.get(0) instanceof Query) {
-            Query query = (Query) executionElements.get(0);
-            outputAttributes = query.getSelector().getSelectionList();
+                List<OutputAttribute> outputAttributeList = query.getSelector().getSelectionList();
+                List<StreamOutputAttribute> moderatedOutputAttributes = new ArrayList<>();
+                //System.out.println(outputAttributeList);
 
-        }
+                for (OutputAttribute outputAttribute : outputAttributeList) {
+                    System.out.println(outputAttribute);
 
-        if (outputAttributes.size() != 0) {
-            System.out.println(outputAttributes.size());
-            for (OutputAttribute outputAttribute : outputAttributes) {
-                System.out.println(outputAttribute.getExpression());
+                    if (outputAttribute.getExpression() instanceof AttributeFunction) {
+                        StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
+                        AttributeFunction attributeFunction = (AttributeFunction) outputAttribute.getExpression();
+                        String functionName = attributeFunction.getName();
 
-                if (outputAttribute.getExpression() instanceof AttributeFunction) {
-                    StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
-                    AttributeFunction attributeFunction = (AttributeFunction) outputAttribute.getExpression();
-                    String functionName = attributeFunction.getName();
-
-                    if (functionName.equals("avg")) {
-                        smartContract.setAverageFunction(true);
-                        AverageFunction averageFunction = new AverageFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        averageFunction.setFunctionName(functionName + variable.getAttributeName());
-                        averageFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-                                averageFunction.setType(smartContract.getAttributes().get(i).getType());
+                        if (functionName.equals("avg")) {
+                            smartContract.setAverageFunction(true);
+                            AverageFunction averageFunction = new AverageFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            averageFunction.setFunctionName(functionName + variable.getAttributeName());
+                            averageFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+                            for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                                if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                    averageFunction.setType(smartContract.getAttributes().get(i).getType());
+                                }
                             }
+
+                            smartContract.addAverageFunction(averageFunction);
+                        } else if (functionName.equals("sum")) {
+                            SumFunction sumFunction = new SumFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            sumFunction.setFunctionName(functionName + variable.getAttributeName());
+                            sumFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+                            for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                                if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                    sumFunction.setType(smartContract.getAttributes().get(i).getType());
+                                }
+                            }
+
+                            smartContract.addSumFunction(sumFunction);
+                        } else if (functionName.equals("max")) {
+                            MaxFunction maxFunction = new MaxFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            maxFunction.setFunctionName(functionName + variable.getAttributeName());
+                            maxFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+                            for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                                if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                    maxFunction.setType(smartContract.getAttributes().get(i).getType());
+                                }
+                            }
+
+                            smartContract.addMaxFunction(maxFunction);
+                        } else if (functionName.equals("min")) {
+                            MinFunction minFunction = new MinFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            minFunction.setFunctionName(functionName + variable.getAttributeName());
+                            minFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+                            for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                                if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                    minFunction.setType(smartContract.getAttributes().get(i).getType());
+                                }
+                            }
+
+                            smartContract.addMinFunction(minFunction);
+                        } else if (functionName.equals("count")) {
+                            CountFunction countFunction = new CountFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            countFunction.setFunctionName(functionName + variable.getAttributeName());
+                            countFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+                            for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                                if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
+                                    countFunction.setType(smartContract.getAttributes().get(i).getType());
+                                }
+                            }
+
+                            smartContract.addCountFunction(countFunction);
                         }
 
-                        smartContract.addAverageFunction(averageFunction);
-                    } else if (functionName.equals("sum")) {
-                        SumFunction sumFunction = new SumFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        sumFunction.setFunctionName(functionName + variable.getAttributeName());
-                        sumFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-                                sumFunction.setType(smartContract.getAttributes().get(i).getType());
+                        System.out.println(functionName);
+                        Expression[] expressions = attributeFunction.getParameters();
+                        if (expressions[0] instanceof Variable) {
+                            Variable variable = (Variable) expressions[0];
+
+                            streamAttribute.setName(variable.getAttributeName());
+                            streamAttribute.setRename(outputAttribute.getRename());
+
+                            for (int i = 0; i < smartContract.getAttributes().size(); i++) {
+                                if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
+                                    streamAttribute.setType(smartContract.getAttributes().get(i).getType());
+                                }
                             }
+                            moderatedOutputAttributes.add(streamAttribute);
                         }
 
-                        smartContract.addSumFunction(sumFunction);
-                    } else if (functionName.equals("max")) {
-                        MaxFunction maxFunction = new MaxFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        maxFunction.setFunctionName(functionName + variable.getAttributeName());
-                        maxFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-                                maxFunction.setType(smartContract.getAttributes().get(i).getType());
-                            }
-                        }
+                    } else if (outputAttribute.getExpression() instanceof Variable) {
+                        Variable variable = (Variable) outputAttribute.getExpression();
 
-                        smartContract.addMaxFunction(maxFunction);
-                    } else if (functionName.equals("min")) {
-                        MinFunction minFunction = new MinFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        minFunction.setFunctionName(functionName + variable.getAttributeName());
-                        minFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-                                minFunction.setType(smartContract.getAttributes().get(i).getType());
-                            }
-                        }
-
-                        smartContract.addMinFunction(minFunction);
-                    } else if (functionName.equals("count")) {
-                        CountFunction countFunction = new CountFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        countFunction.setFunctionName(functionName + variable.getAttributeName());
-                        countFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-                                countFunction.setType(smartContract.getAttributes().get(i).getType());
-                            }
-                        }
-
-                        smartContract.addCountFunction(countFunction);
-                    } else if (functionName.equals("maxForever")) {
-                        MaxForeverFunction maxForeverFunction = new MaxForeverFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        maxForeverFunction.setFunctionName(functionName + variable.getAttributeName());
-                        maxForeverFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-                                maxForeverFunction.setType(smartContract.getAttributes().get(i).getType());
-                            }
-                        }
-
-                        smartContract.addMaxForeverFunction(maxForeverFunction);
-                    } else if (functionName.equals("minForever")) {
-                        MinForeverFunction minForeverFunction = new MinForeverFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        minForeverFunction.setFunctionName(functionName + variable.getAttributeName());
-                        minForeverFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-                                minForeverFunction.setType(smartContract.getAttributes().get(i).getType());
-                            }
-                        }
-
-                        smartContract.addMinForeverFunction(minForeverFunction);
-                    }
-
-                    System.out.println(functionName);
-                    Expression[] expressions = attributeFunction.getParameters();
-                    if (expressions[0] instanceof Variable) {
-                        Variable variable = (Variable) expressions[0];
+                        StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
 
                         streamAttribute.setName(variable.getAttributeName());
                         streamAttribute.setRename(outputAttribute.getRename());
-
                         for (int i = 0; i < smartContract.getAttributes().size(); i++) {
                             if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
                                 streamAttribute.setType(smartContract.getAttributes().get(i).getType());
@@ -274,29 +360,16 @@ public class NewQueryHandler {
                         }
                         moderatedOutputAttributes.add(streamAttribute);
                     }
-
-                } else if (outputAttribute.getExpression() instanceof Variable) {
-                    Variable variable = (Variable) outputAttribute.getExpression();
-
-                    StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
-
-                    streamAttribute.setName(variable.getAttributeName());
-                    streamAttribute.setRename(outputAttribute.getRename());
-                    for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-                        if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
-                            streamAttribute.setType(smartContract.getAttributes().get(i).getType());
-                        }
-                    }
-
-                    moderatedOutputAttributes.add(streamAttribute);
                 }
+
+                moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
+                this.smartContract.setOutAttributes(moderatedOutputAttributes);
 
 
             }
 
-            moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
-            this.smartContract.setOutAttributes(moderatedOutputAttributes);
         }
+
 
     }
 
@@ -304,22 +377,39 @@ public class NewQueryHandler {
 
         Map<String, StreamDefinition> streamDefinitionMap = siddhiApp.getStreamDefinitionMap();
 
-        StreamDefinition streamDefinition = streamDefinitionMap.get(streamDefinitionMap.keySet().toArray()[0]);
+        List<InputStreamEvent> inputStreamEventList = new ArrayList<>();
 
-        Iterator<Attribute> attributeIterator = streamDefinition.getAttributeList().iterator();
+        //todo implement a better way to get output attribute types
+        List<StreamAttribute> streamAttributeList = new ArrayList<>();
 
-        List<StreamAttribute> moderatedInputAttributes = new ArrayList<>();
+        for (Map.Entry<String, StreamDefinition> stringStreamDefinitionEntry : streamDefinitionMap.entrySet()) {
 
-        while (attributeIterator.hasNext()) {
-            Attribute attribute = attributeIterator.next();
+            StreamDefinition streamDefinition = stringStreamDefinitionEntry.getValue();
 
-            StreamAttribute streamAttribute = new StreamAttribute();
-            streamAttribute.setName(attribute.getName());
-            streamAttribute.setType(getAttributeType(attribute.getType()));
-            moderatedInputAttributes.add(streamAttribute);
+            InputStreamEvent inputStreamEvent = new InputStreamEvent();
+
+            inputStreamEvent.setInputStreamName(streamDefinition.getId());
+
+            List<Attribute> attributeList = streamDefinition.getAttributeList();
+            List<StreamAttribute> moderatedInputAttributes = new ArrayList<>();
+
+            for (Attribute attribute : attributeList) {
+                StreamAttribute streamAttribute = new StreamAttribute();
+                streamAttribute.setName(attribute.getName());
+                streamAttribute.setType(getAttributeType(attribute.getType()));
+                moderatedInputAttributes.add(streamAttribute);
+
+                //todo implement a better way to get output attribute types
+                streamAttributeList.add(streamAttribute);
+            }
+
+            inputStreamEvent.setStreamAttributeList(moderatedInputAttributes);
+            inputStreamEventList.add(inputStreamEvent);
         }
+        // todo implement a better way to get output attribute types
+        smartContract.setAttributes(streamAttributeList);
 
-        smartContract.setAttributes(moderatedInputAttributes);
+        smartContract.setInputStreamEventList(inputStreamEventList);
     }
 
     public int getWindowExpression(Expression expression) {

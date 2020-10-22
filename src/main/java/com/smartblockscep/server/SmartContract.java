@@ -1,7 +1,5 @@
 package com.smartblockscep.server;
 
-import com.smartblockscep.server.AverageFunction;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,6 +8,7 @@ public class SmartContract {
     private String version = "0.1.2";
     private String name = "DataQualityContract";
     private String inputStreamName;
+    private List<InputStreamEvent> inputStreamEventList;
     private String outputStreamName;
     private List<StreamAttribute> attributes;
     private List<StreamOutputAttribute> outAttributes;
@@ -50,6 +49,10 @@ public class SmartContract {
     public void setInputStreamName(String inputStreamName) {
         this.inputStreamName = inputStreamName;
     }
+
+    public List<InputStreamEvent> getInputStreamEventList(){return inputStreamEventList;}
+
+    public void setInputStreamEventList(List<InputStreamEvent> inputStreamEventList){this.inputStreamEventList = inputStreamEventList;}
 
     public boolean isHasFilter() {
         return hasFilter;
