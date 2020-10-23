@@ -1,0 +1,30 @@
+pragma solidity >=0.4.22 <0.7.0;
+pragma experimental ABIEncoderV2;
+
+contract {{name}} {
+
+{{#inputStreamEventList}}
+struct {{inputStreamName}}Event {
+{{#streamAttributeList}}
+    {{type}} {{name}};
+{{/streamAttributeList}}
+}
+{{/inputStreamEventList}}
+
+
+{{#filterExpressionList}}
+function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public{
+
+    if {{{expression}}}{
+
+        {{outputStreamName}}Events.push({{outputStreamName}}Event({
+        {{#streamOutputAttributeList}}
+            {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
+        {{/streamOutputAttributeList}}
+        }));
+    }
+
+}
+{{/filterExpressionList}}
+
+}
