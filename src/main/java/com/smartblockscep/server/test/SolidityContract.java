@@ -7,12 +7,12 @@ import java.util.List;
 
 public class SolidityContract {
 
-    private final String version = "0.1.2";
-    private final String name = "DataQualityContract";
     private List<InputStreamEvent> inputStreamEventList;
     private List<FilterExpression> filterExpressionList;
     private List<StreamOutputAttribute> streamOutputAttributeList;
     private String outputStreamName;
+    private List<WindowFunction> windowFunctionList;
+    private List<WindowExpression> windowExpressionList;
 
     public List<InputStreamEvent> getInputStreamEventList() {
         return inputStreamEventList;
@@ -32,11 +32,11 @@ public class SolidityContract {
     }
 
     public String getVersion() {
-        return version;
+        return "0.1.2";
     }
 
     public String getName() {
-        return name;
+        return "DataQualityContract";
     }
 
     public List<StreamOutputAttribute> getStreamOutputAttributeList() {
@@ -53,5 +53,22 @@ public class SolidityContract {
 
     public void setOutputStreamName(String outputStreamName) {
         this.outputStreamName = outputStreamName;
+    }
+
+
+    public List<WindowFunction> getWindowFunctionList() {
+        return windowFunctionList;
+    }
+
+    public void setWindowFunctionList(List<WindowFunction> windowFunctionList) {
+        this.windowFunctionList = windowFunctionList;
+    }
+
+    public List<WindowExpression> getWindowExpressionList() {
+        return windowExpressionList;
+    }
+
+    public void setWindowExpressionList(List<WindowExpression> windowExpressionList) {
+        this.windowExpressionList = windowExpressionList;
     }
 }
