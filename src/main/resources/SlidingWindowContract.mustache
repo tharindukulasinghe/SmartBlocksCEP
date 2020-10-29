@@ -6,14 +6,6 @@ contract {{name}} {
     {{inputStreamName}}Event[{{windowLength}}] public window;
     uint256 public index;
 
-    {{#maxForeverFunctions}}
-    {{type}} _{{functionName}};
-    {{/maxForeverFunctions}}
-
-    {{#minForeverFunctions}}
-    {{type}} _{{functionName}};
-    {{/minForeverFunctions}}
-
     struct {{inputStreamName}}Event {
     {{#attributes}}
         {{type}} {{name}};
@@ -26,27 +18,18 @@ contract {{name}} {
     {{/outAttributes}}
     }
 
-    {{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
+{{ outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
     function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
         if(index == window.length) {
-            index = 0;
-            for (uint256 i = 0; i < window.length-1; i++) {
-                window[i] = window[i + 1];
+            for(uint256 i = 1; i < {{windowLength}}-1; i++){
+                window[i] = window[i+1];
             }
-
-            window[window.length] = incomingTempStreamEvent;
+            window[index-1] = incomingTempStreamEvent;
         }
         else {
-            window[index] = incomingTempStreamEvent;
             index++;
         }
-        {{#maxForeverFunctions}}
-        set{{functionName}}(incoming{{inputStreamName}}Event);
-        {{/maxForeverFunctions}}
-        {{#minForeverFunctions}}
-        set{{functionName}}(incoming{{inputStreamName}}Event);
-        {{/minForeverFunctions}}
         check();
     }
 
@@ -67,7 +50,7 @@ contract {{name}} {
     {{#averageFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
         {{type}} sum = 0;
-        for(uint256 i = 0; i < index; i++){
+        for({{type}} i = 0; i < index; i++){
             sum += window[i].{{member}};
         }
         {{type}} avg = sum / (index);
@@ -75,72 +58,44 @@ contract {{name}} {
     }
     {{/averageFunctions}}
 
-    {{#sumFunctions}}
+{{#sumFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
-        {{type}} sum = 0;
-        for(uint256 i = 0; i < index; i++){
-            sum += window[i].{{member}};
-        }
-        return sum;
+    {{type}} sum = 0;
+    for({{type}} i = 0; i < index; i++){
+    sum += window[i].{{member}};
     }
-    {{/sumFunctions}}
+    return sum;
+    }
+{{/sumFunctions}}
 
-    {{#maxFunctions}}
+{{#maxFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
-        {{type}} max = window[0].{{member}};
-        for(uint256 i = 0; i < index; i++){
-            if(window[i].{{member}} > max){
-                max = window[i].{{member}};
-            }
-        }
-        return max;
+    {{type}} max = window[0].{{member}};
+    for({{type}} i = 0; i < index; i++){
+    if(window[i].{{member}} > max){
+    max = window[i].{{member}};
     }
-    {{/maxFunctions}}
+    }
+    return max;
+    }
+{{/maxFunctions}}
 
-    {{#minFunctions}}
+{{#minFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
-        {{type}} min = window[0].{{member}};
-        for(uint256 i = 0; i < index; i++){
-            if(window[i].{{member}} < min){
-                min = window[i].{{member}};
-            }
-        }
-        return min;
+    {{type}} min = window[0].{{member}};
+    for({{type}} i = 0; i < index; i++){
+    if(window[i].{{member}} < min){
+    min = window[i].{{member}};
     }
-    {{/minFunctions}}
+    }
+    return min;
+    }
+{{/minFunctions}}
 
-    {{#countFunctions}}
+{{#countFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
-        {{type}} count = window.length;
-        return count;
+    {{type}} count = window.length;
+    return count;
     }
-    {{/countFunctions}}
-
-    {{#maxForeverFunctions}}
-    function set{{functionName}}({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
-        if(incoming{{inputStreamName}}Event.{{member}} > _{{functionName}}) {
-            _{{functionName}} = incoming{{inputStreamName}}Event.{{member}};
-        }
-    }
-    {{/maxForeverFunctions}}
-
-    {{#maxForeverFunctions}}
-    function {{functionName}}() private view returns ({{type}}) {
-        return _{{functionName}};
-    }
-    {{/maxForeverFunctions}}
-
-    {{#minForeverFunctions}}
-    function set{{functionName}}({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
-        if(incoming{{inputStreamName}}Event.{{member}} > _{{functionName}}) {
-            _{{functionName}} = incoming{{inputStreamName}}Event.{{member}};
-        }
-    }
-    {{/minForeverFunctions}}
-
-    {{#minForeverFunctions}}
-    function {{functionName}}() private view returns ({{type}}) {
-        return _{{functionName}};
-    }
-    {{/minForeverFunctions}}
+{{/countFunctions}}
 }

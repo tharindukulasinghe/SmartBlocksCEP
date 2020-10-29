@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 public class CodeGenerator {
+
     SolidityContract solidityContract = new SolidityContract();
 
     public String processOutput(SiddhiApp siddhiApp) {
@@ -62,8 +63,17 @@ public class CodeGenerator {
             }
         }
 
-        MustacheFactory mf = new DefaultMustacheFactory();
-        Mustache m = mf.compile("SolidityContract.mustache");
+        Mustache m;
+
+        if(solidityContract.getQueryType()== QueryType.SlidingWindow){
+            MustacheFactory mf = new DefaultMustacheFactory();
+            m = mf.compile("SlidingWindowContract.mustache");
+        }
+        else {
+            MustacheFactory mf = new DefaultMustacheFactory();
+            m = mf.compile("SolidityContract.mustache");
+        }
+
 
         String output = "";
 
@@ -78,6 +88,7 @@ public class CodeGenerator {
     }
 
     private void processStreamDefinition(Map<String, StreamDefinition> streamDefinitionMap) {
+
         List<InputStreamEvent> inputStreamEventList = new ArrayList<>();
 
         //todo implement a better way to get output attribute types
@@ -102,7 +113,6 @@ public class CodeGenerator {
                 moderatedInputAttributes.add(streamAttribute);
 
                 //todo implement a better way to get output attribute types
-
                 // streamAttributeList.add(streamAttribute);
             }
 
@@ -141,6 +151,13 @@ public class CodeGenerator {
 
                 } else if (streamHandler instanceof Window) {
                     Window window = (Window) streamHandler;
+                    System.out.println(window);
+                    if(window.getFunction().equals("lengthBatch")){
+                        solidityContract.setQueryType(QueryType.BatchWindow);
+                    }
+                    else {
+                        solidityContract.setQueryType(QueryType.SlidingWindow);
+                    }
                     processWindow(window, singleInputStreamStreamId);
                 }
             }

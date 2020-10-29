@@ -18,7 +18,7 @@ contract {{name}} {
     {{/outAttributes}}
     }
 
-    {{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
+    {{ outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
     function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
         if(index == window.length) {

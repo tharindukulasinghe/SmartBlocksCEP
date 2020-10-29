@@ -88,9 +88,8 @@ public class NewQueryHandler {
 //        return output;
 
         CodeGenerator codeGenerator = new CodeGenerator();
-         return codeGenerator.processOutput(siddhiApp);
+        return codeGenerator.processOutput(siddhiApp);
     }
-
 
 
     public void setExpression(SiddhiApp siddhiApp) {
@@ -135,6 +134,7 @@ public class NewQueryHandler {
                             setFilter((Filter) streamHandler);
 
                         } else if (streamHandler instanceof Window) {
+                            System.out.println(streamHandler);
                             setWindow((Window) streamHandler);
                         }
                     }
@@ -181,7 +181,7 @@ public class NewQueryHandler {
                                 }
                             }
 
-                            if(stateElementNextStateElement instanceof StreamStateElement){
+                            if (stateElementNextStateElement instanceof StreamStateElement) {
                                 StreamStateElement streamStateElement = (StreamStateElement) stateElementNextStateElement;
                                 BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
 

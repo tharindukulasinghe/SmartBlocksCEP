@@ -5,6 +5,7 @@ import java.util.List;
 
 public class SmartContract {
 
+    private QueryType queryType;
     private String version = "0.1.2";
     private String name = "DataQualityContract";
     private String inputStreamName;

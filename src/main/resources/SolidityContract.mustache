@@ -22,7 +22,6 @@ struct {{outputStreamName}}Event {
 function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public{
 
     if {{{expression}}}{
-
         {{outputStreamName}}Events.push({{outputStreamName}}Event({
         {{#streamOutputAttributeList}}
             {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
@@ -37,7 +36,7 @@ function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Even
 {{inputStreamName}}Event[{{windowLength}}] public window;
 uint256 public index;
 
-{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
+{{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
 function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
     if(index == window.length) {

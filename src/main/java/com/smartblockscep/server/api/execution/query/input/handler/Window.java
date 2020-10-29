@@ -61,6 +61,10 @@ public class Window implements StreamHandler, Extension, SiddhiElement {
         return (parameters == null) ? null : Arrays.copyOfRange(parameters, 0, parameters.length);
     }
 
+    public String getFunction(){
+        return this.function;
+    }
+
     public String getNamespace() {
         return namespace;
     }
