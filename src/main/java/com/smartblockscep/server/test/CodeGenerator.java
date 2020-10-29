@@ -29,7 +29,6 @@ import com.smartblockscep.server.api.expression.math.Subtract;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +58,6 @@ public class CodeGenerator {
 
                 // handle output stream
                 OutputStream outputStream = query.getOutputStream();
-                System.out.println(outputStream.toString());
                 solidityContract.setOutputStreamName(outputStream.getId());
             }
         }
@@ -131,19 +129,19 @@ public class CodeGenerator {
             // todo implement logic for join input stream
 
         } else if (inputStream instanceof SingleInputStream) {
-            //System.out.println(inputStream);
             SingleInputStream singleInputStream = (SingleInputStream) inputStream;
 
             List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
-            String singleInputStreamStreamId=singleInputStream.getStreamId();
+            String singleInputStreamStreamId = singleInputStream.getStreamId();
 
             for (StreamHandler streamHandler : streamHandlerList) {
                 if (streamHandler instanceof Filter) {
                     Filter filter = (Filter) streamHandler;
-                    processFilter(filter,singleInputStreamStreamId);
+                    processFilter(filter, singleInputStreamStreamId);
 
                 } else if (streamHandler instanceof Window) {
-                    //setWindow((Window) streamHandler);
+                    Window window = (Window) streamHandler;
+                    processWindow(window, singleInputStreamStreamId);
                 }
             }
 
@@ -157,7 +155,6 @@ public class CodeGenerator {
             if (type.equals(StateInputStream.Type.PATTERN)) {
 
                 StateElement stateElement = stateInputStream.getStateElement();
-                //System.out.println(stateInputStream);
                 TimeConstant timeConstant = stateInputStream.getWithinTime();
                 //System.out.println(timeConstant);
 
@@ -178,16 +175,18 @@ public class CodeGenerator {
 
                             // handle basic single input stream
                             BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
-
+                            String streamId = basicSingleInputStream.getStreamId();
 //                                    System.out.println(basicSingleInputStream);
-//                                    System.out.println("StreamId: " + basicSingleInputStream.getStreamId());
-//                                    System.out.println("ReferenceId: " + basicSingleInputStream.getStreamReferenceId());
+                                    System.out.println("StreamId: " + basicSingleInputStream.getStreamId());
+                                    System.out.println("ReferenceId: " + basicSingleInputStream.getStreamReferenceId());
 
                             // handle stream handlers
                             List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
                             for (StreamHandler streamHandler : streamHandlerList) {
                                 if (streamHandler instanceof Filter) {
-                                    System.out.println(streamHandler);
+                                    Filter filter = (Filter) streamHandler;
+                                    processFilter(filter, streamId);
+                                    //System.out.println(streamHandler);
                                     // todo implement filter method
                                     //setFilter((Filter) streamHandler);
                                 }
@@ -223,13 +222,15 @@ public class CodeGenerator {
                             System.out.println(basicSingleInputStream);
                             System.out.println("StreamId: " + basicSingleInputStream.getStreamId());
                             System.out.println("ReferenceId: " + basicSingleInputStream.getStreamReferenceId());
+                            String streamId = basicSingleInputStream.getStreamId();
 
                             List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
                             for (StreamHandler streamHandler : streamHandlerList) {
                                 if (streamHandler instanceof Filter) {
-                                    System.out.println(streamHandler);
+//                                    System.out.println(streamHandler);
                                     // todo implement filter method
-                                    //setFilter((Filter) streamHandler);
+                                    Filter filter = (Filter) streamHandler;
+                                    processFilter(filter, streamId);
                                 }
                             }
                         }
@@ -270,17 +271,18 @@ public class CodeGenerator {
         for (OutputAttribute outputAttribute : outputAttributeList) {
 
             // get rename
-            String rename = outputAttribute.getRename();
+            //String rename = outputAttribute.getRename();
             // todo process rename
 
             // get expression
             Expression expression = outputAttribute.getExpression();
             if (expression instanceof AttributeFunction) {
-
+                List<WindowFunction> windowFunctionList = new ArrayList<>();
                 StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
                 AttributeFunction attributeFunction = (AttributeFunction) expression;
                 String functionName = attributeFunction.getName();
-
+               // String streamId = attributeFunction.;
+                WindowFunction windowFunction = new WindowFunction();
                 switch (functionName) {
                     case "avg": {
                         //smartContract.setAverageFunction(true);
@@ -289,13 +291,15 @@ public class CodeGenerator {
                         averageFunction.setFunctionName(functionName + variable.getAttributeName());
                         averageFunction.setMember(variable.getAttributeName());
                         streamAttribute.setFunction(functionName + variable.getAttributeName());
-//                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-//                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-//                                averageFunction.setType(smartContract.getAttributes().get(i).getType());
-//                            }
-//                        }
-//
-//                        smartContract.addAverageFunction(averageFunction);
+
+                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                        for (StreamAttribute attribute : streamAttributeList) {
+                            if (attribute.getName().equals(streamAttribute.getName())) {
+                                averageFunction.setType(attribute.getType());
+                            }
+                        }
+                   windowFunction.addAverageFunction(averageFunction);
                         break;
                     }
                     case "sum": {
@@ -304,13 +308,16 @@ public class CodeGenerator {
                         sumFunction.setFunctionName(functionName + variable.getAttributeName());
                         sumFunction.setMember(variable.getAttributeName());
                         streamAttribute.setFunction(functionName + variable.getAttributeName());
-//                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-//                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-//                                sumFunction.setType(smartContract.getAttributes().get(i).getType());
-//                            }
-//                        }
+
+                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                        for (StreamAttribute attribute : streamAttributeList) {
+                            if (attribute.getName().equals(streamAttribute.getName())) {
+                                sumFunction.setType(attribute.getType());
+                            }
+                        }
 //
-//                        smartContract.addSumFunction(sumFunction);
+                        windowFunction.addSumFunction(sumFunction);
                         break;
                     }
                     case "max": {
@@ -320,13 +327,15 @@ public class CodeGenerator {
                         maxFunction.setMember(variable.getAttributeName());
                         streamAttribute.setFunction(functionName + variable.getAttributeName());
 
-//                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-//                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-//                                maxFunction.setType(smartContract.getAttributes().get(i).getType());
-//                            }
-//                        }
+                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                        for (StreamAttribute attribute : streamAttributeList) {
+                            if (attribute.getName().equals(streamAttribute.getName())) {
+                                maxFunction.setType(attribute.getType());
+                            }
+                        }
 //
-//                        smartContract.addMaxFunction(maxFunction);
+                        windowFunction.addMaxFunction(maxFunction);
                         break;
                     }
                     case "min": {
@@ -336,13 +345,15 @@ public class CodeGenerator {
                         minFunction.setMember(variable.getAttributeName());
                         streamAttribute.setFunction(functionName + variable.getAttributeName());
 
-//                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-//                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-//                                minFunction.setType(smartContract.getAttributes().get(i).getType());
-//                            }
-//                        }
+                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                        for (StreamAttribute attribute : streamAttributeList) {
+                            if (attribute.getName().equals(streamAttribute.getName())) {
+                                minFunction.setType(attribute.getType());
+                            }
+                        }
 //
-//                        smartContract.addMinFunction(minFunction);
+                        windowFunction.addMinFunction(minFunction);
                         break;
                     }
                     case "count": {
@@ -352,16 +363,19 @@ public class CodeGenerator {
                         countFunction.setMember(variable.getAttributeName());
                         streamAttribute.setFunction(functionName + variable.getAttributeName());
 
-//                        for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-//                            if (smartContract.getAttributes().get(i).getName().equals(variable.getAttributeName())) {
-//                                countFunction.setType(smartContract.getAttributes().get(i).getType());
-//                            }
-//                        }
-//
-//                        smartContract.addCountFunction(countFunction);
+                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                        for (StreamAttribute attribute : streamAttributeList) {
+                            if (attribute.getName().equals(streamAttribute.getName())) {
+                                countFunction.setType(attribute.getType());
+                            }
+                        }
+                        windowFunction.addCountFunction(countFunction);
                         break;
                     }
                 }
+                windowFunctionList.add(windowFunction);
+                solidityContract.setWindowFunctionList(windowFunctionList);
 
                 Expression[] expressions = attributeFunction.getParameters();
 
@@ -371,11 +385,13 @@ public class CodeGenerator {
                     streamAttribute.setName(variable.getAttributeName());
                     streamAttribute.setRename(outputAttribute.getRename());
 
-//                    for (int i = 0; i < smartContract.getAttributes().size(); i++) {
-//                        if (smartContract.getAttributes().get(i).getName().equals(streamAttribute.getName())) {
-//                            streamAttribute.setType(smartContract.getAttributes().get(i).getType());
-//                        }
-//                    }
+                    List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                    List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                    for (StreamAttribute attribute : streamAttributeList) {
+                        if (attribute.getName().equals(streamAttribute.getName())) {
+                            streamAttribute.setType(attribute.getType());
+                        }
+                    }
                     moderatedOutputAttributes.add(streamAttribute);
                 }
 
@@ -389,9 +405,9 @@ public class CodeGenerator {
 
                 streamAttribute.setName(variable.getAttributeName());
                 streamAttribute.setRename(outputAttribute.getRename());
-                if(streamId == null){
+                if (streamId == null) {
                     List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
-                    List<StreamAttribute> streamAttributeList =inputStreamEventList.get(0).getStreamAttributeList();
+                    List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
                     for (StreamAttribute attribute : streamAttributeList) {
                         if (attribute.getName().equals(streamAttribute.getName())) {
                             streamAttribute.setType(attribute.getType());
@@ -409,10 +425,12 @@ public class CodeGenerator {
 
                 if (leftValue instanceof Variable) {
                     Variable variable = (Variable) leftValue;
+                    System.out.println(variable.getStreamId());
                 }
 
                 if (rightValue instanceof Variable) {
                     Variable variable = (Variable) rightValue;
+                    System.out.println(variable.getStreamId());
                 }
             }
         }
@@ -449,13 +467,13 @@ public class CodeGenerator {
         }
     }
 
-    public void processFilter(Filter filter,String streamId) {
+    public void processFilter(Filter filter, String streamId) {
         Expression[] expressions = filter.getParameters();
         List<FilterExpression> filterExpressionList = new ArrayList<>();
 
-        for(Expression expression : expressions){
+        for (Expression expression : expressions) {
             FilterExpression filterExpression = new FilterExpression();
-            String output = getFilterExpression(expression,streamId);
+            String output = getFilterExpression(expression, streamId);
             filterExpression.setInputStreamName(streamId);
             filterExpression.setExpression(output);
             filterExpressionList.add(filterExpression);
@@ -463,27 +481,27 @@ public class CodeGenerator {
         solidityContract.setFilterExpressionList(filterExpressionList);
     }
 
-    public String getFilterExpression(Expression expression,String streamId) {
+    public String getFilterExpression(Expression expression, String streamId) {
 
         String event = "incoming" + streamId + "Event.";
         String filterExpression = "";
 
         if (expression instanceof And) {
             And andExpression = (And) expression;
-            String leftExpression = getFilterExpression(andExpression.getLeftExpression(),streamId);
-            String rightExpression = getFilterExpression(andExpression.getRightExpression(),streamId);
+            String leftExpression = getFilterExpression(andExpression.getLeftExpression(), streamId);
+            String rightExpression = getFilterExpression(andExpression.getRightExpression(), streamId);
 
             return "(" + leftExpression + " && " + rightExpression + ")";
         } else if (expression instanceof Or) {
             Or orExpression = (Or) expression;
-            String leftExpression = getFilterExpression(orExpression.getLeftExpression(),streamId);
-            String rightExpression = getFilterExpression(orExpression.getRightExpression(),streamId);
+            String leftExpression = getFilterExpression(orExpression.getLeftExpression(), streamId);
+            String rightExpression = getFilterExpression(orExpression.getRightExpression(), streamId);
 
             return "(" + leftExpression + " || " + rightExpression + ")";
         } else if (expression instanceof Compare) {
             Compare compareExpression = (Compare) expression;
-            String leftExpression = getFilterExpression(compareExpression.getLeftExpression(),streamId);
-            String rightExpression = getFilterExpression(compareExpression.getRightExpression(),streamId);
+            String leftExpression = getFilterExpression(compareExpression.getLeftExpression(), streamId);
+            String rightExpression = getFilterExpression(compareExpression.getRightExpression(), streamId);
             String operatorString = getOperatorString(compareExpression.getOperator());
             return "(" + leftExpression + " " + operatorString + " " + rightExpression + ")";
 
@@ -538,5 +556,23 @@ public class CodeGenerator {
         } else {
             return "";
         }
+    }
+
+    public void processWindow(Window window, String streamId) {
+        Expression[] expressions = window.getParameters();
+        List<WindowExpression> windowExpressionList = new ArrayList<>();
+        for (Expression expression : expressions) {
+            WindowExpression windowExpression = new WindowExpression();
+            //windowExpression.setWindowName(expression.g);
+            int windowSize = 0;
+            if (expression instanceof IntConstant) {
+                IntConstant intConstant = (IntConstant) expression;
+                windowSize = intConstant.getValue();
+                windowExpression.setLength(windowSize);
+                windowExpression.setInputStreamName(streamId);
+                windowExpressionList.add(windowExpression);
+            }
+        }
+        solidityContract.setWindowExpressionList(windowExpressionList);
     }
 }
