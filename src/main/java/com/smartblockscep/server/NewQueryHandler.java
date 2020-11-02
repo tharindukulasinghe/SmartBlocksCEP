@@ -41,8 +41,6 @@ import java.util.Map;
 public class NewQueryHandler {
     SmartContract smartContract = new SmartContract();
 
-    boolean isFilter = false;
-
     public static SiddhiApp parseMe(String query) {
 
         CharStream input = CharStreams.fromString(query);
