@@ -4,11 +4,11 @@ pragma experimental ABIEncoderV2;
 contract {{name}} {
 
 {{#inputStreamEventList}}
-    struct {{inputStreamName}}Event {
-    {{#streamAttributeList}}
-        {{type}} {{name}};
-    {{/streamAttributeList}}
-    }
+struct {{inputStreamName}}Event {
+{{#streamAttributeList}}
+    {{type}} {{name}};
+{{/streamAttributeList}}
+}
 {{/inputStreamEventList}}
 
 struct {{outputStreamName}}Event {
