@@ -69,6 +69,10 @@ public class CodeGenerator {
             MustacheFactory mf = new DefaultMustacheFactory();
             m = mf.compile("SlidingWindowContract.mustache");
         }
+        else if(solidityContract.getQueryType() == QueryType.Block){
+            MustacheFactory mf = new DefaultMustacheFactory();
+            m = mf.compile("BlockWindowContract.mustache");
+        }
         else {
             MustacheFactory mf = new DefaultMustacheFactory();
             m = mf.compile("SolidityContract.mustache");
@@ -151,9 +155,12 @@ public class CodeGenerator {
 
                 } else if (streamHandler instanceof Window) {
                     Window window = (Window) streamHandler;
-                    System.out.println(window);
+                    System.out.println(window.getFunction());
                     if(window.getFunction().equals("lengthBatch")){
                         solidityContract.setQueryType(QueryType.BatchWindow);
+                    }
+                    else if(window.getFunction().equals("block")){
+                        solidityContract.setQueryType(QueryType.Block);
                     }
                     else {
                         solidityContract.setQueryType(QueryType.SlidingWindow);
