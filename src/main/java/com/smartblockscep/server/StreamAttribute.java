@@ -3,6 +3,14 @@ package com.smartblockscep.server;
 public class StreamAttribute {
 
     private String name;
+    private String type;
+
+    public String toString() {
+        return "StreamAttribute{" +
+                "name=" + name +", "+
+                "type=" + type +" "+
+                '}';
+    }
 
     public String getName() {
         return name;
@@ -20,6 +28,6 @@ public class StreamAttribute {
         this.type = type;
     }
 
-    private String type;
+
 
 }

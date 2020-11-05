@@ -17,19 +17,19 @@ struct {{outputStreamName}}Event {
 {{/streamOutputAttributeList}}
 }
 
+{{outputStreamName}}Event[] public {{outputStreamName}}Events;
 
 {{#filterExpressionList}}
 function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public{
-
     if {{{expression}}}{
         {{outputStreamName}}Events.push({{outputStreamName}}Event({
-        {{#streamOutputAttributeList}}
+            {{#streamOutputAttributeList}}
             {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
-        {{/streamOutputAttributeList}}
+            {{/streamOutputAttributeList}}
         }));
     }
-
 }
+
 {{/filterExpressionList}}
 
 {{#windowExpressionList}}
@@ -53,7 +53,7 @@ function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Even
 
 function check() private {
     if(index == 5){
-    processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
+        processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
         {{#outAttributes}}
             {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
         {{/outAttributes}}
@@ -61,6 +61,31 @@ function check() private {
     }
 }
 {{/windowExpressionList}}
+
+{{#patternExpressionList}}
+    {{#inputStreamEventList}}
+        {{inputStreamName}}Event[] public {{inputStreamName}}Events;
+    {{/inputStreamEventList}}
+
+{{/patternExpressionList}}
+
+{{#sequenceExpressionList}}
+{{initialStreamName.name}}Event private initial{{initialStreamName.name}}Event;
+
+function process({{#inputStreamNames}}{{^isInitial}}{{name}}Event memory incoming{{name}}Event,{{/isInitial}}{{/inputStreamNames}}) public{
+
+    if ({{{expression}}}){
+        {{outputStreamName}}Events.push({{outputStreamName}}Event({
+            {{#sequenceOutPuts}}
+                {{{.}}},
+            {{/sequenceOutPuts}}
+        }));
+    }
+
+    initial{{initialStreamName.name}}Event = incoming{{initialStreamName.name}}Event;
+}
+
+{{/sequenceExpressionList}}
 
 {{#windowFunctionList}}
 {{#averageFunctions}}
@@ -73,7 +98,6 @@ function {{functionName}}() private view returns ({{type}}) {
 
     return avg;
 }
-
 {{/averageFunctions}}
 
 {{#sumFunctions}}
@@ -85,7 +109,6 @@ function {{functionName}}() private view returns ({{type}}) {
 
     return sum;
 }
-
 {{/sumFunctions}}
 
 {{#maxFunctions}}
@@ -122,6 +145,6 @@ function {{functionName}}() private view returns ({{type}}) {
     return count;
 }
 
-{{/countFunctions}}
+ {{/countFunctions}}
 {{/windowFunctionList}}
 }

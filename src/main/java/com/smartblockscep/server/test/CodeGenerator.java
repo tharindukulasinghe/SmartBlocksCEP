@@ -25,7 +25,7 @@ import com.smartblockscep.server.api.expression.condition.And;
 import com.smartblockscep.server.api.expression.condition.Compare;
 import com.smartblockscep.server.api.expression.condition.Or;
 import com.smartblockscep.server.api.expression.constant.*;
-import com.smartblockscep.server.api.expression.math.Subtract;
+import com.smartblockscep.server.api.expression.math.*;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ public class CodeGenerator {
     SolidityContract solidityContract = new SolidityContract();
 
     public String processOutput(SiddhiApp siddhiApp) {
-        //System.out.println(siddhiApp);
+        System.out.println(siddhiApp);
 
         // process stream definition
         Map<String, StreamDefinition> streamDefinitionMap = siddhiApp.getStreamDefinitionMap();
@@ -147,7 +147,6 @@ public class CodeGenerator {
 
             List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
             String singleInputStreamStreamId = singleInputStream.getStreamId();
-
             for (StreamHandler streamHandler : streamHandlerList) {
                 if (streamHandler instanceof Filter) {
                     Filter filter = (Filter) streamHandler;
@@ -174,96 +173,330 @@ public class CodeGenerator {
             StateInputStream stateInputStream = (StateInputStream) inputStream;
             StateInputStream.Type type = stateInputStream.getStateType();
 
-            //smartContract.setInputStreamNames(stateInputStream.getUniqueStreamIds());
-
             if (type.equals(StateInputStream.Type.PATTERN)) {
+                System.out.println(stateInputStream);
 
                 StateElement stateElement = stateInputStream.getStateElement();
                 TimeConstant timeConstant = stateInputStream.getWithinTime();
-                //System.out.println(timeConstant);
 
-                if (stateElement instanceof NextStateElement) {
-                    NextStateElement nextStateElement = (NextStateElement) stateElement;
-                    // get state element
-                    StateElement stateElement1 = nextStateElement.getStateElement();
+                SequenceExpression sequenceExpression = new SequenceExpression();
+                solidityContract.addSequenceExpression(sequenceExpression);
+                processStateElement(stateElement, sequenceExpression);
 
-                    //process state element
-                    if (stateElement1 instanceof EveryStateElement) {
-                        EveryStateElement everyStateElement = (EveryStateElement) stateElement1;
+            } else if (type.equals(StateInputStream.Type.SEQUENCE)) {
+                System.out.println(stateInputStream.getWithinTime());
+                SequenceExpression sequenceExpression = new SequenceExpression();
+                solidityContract.addSequenceExpression(sequenceExpression);
+                StateElement stateElement = stateInputStream.getStateElement();
+                processStateElement(stateElement, sequenceExpression);
+            }
+        }
+    }
 
-                        // handle state element
-                        StateElement stateElement2 = everyStateElement.getStateElement();
+    private void processStateElement(StateElement stateElement, SequenceExpression sequenceExpression) {
+        //System.out.println(stateElement);
+        if (stateElement instanceof NextStateElement) {
+            NextStateElement nextStateElement = (NextStateElement) stateElement;
+            // get state element
+            StateElement stateElement1 = nextStateElement.getStateElement();
+            processStateElement(stateElement1, sequenceExpression);
+            StateElement stateElement2 = nextStateElement.getNextStateElement();
+            processStateElement(stateElement2, sequenceExpression);
+        } else if (stateElement instanceof EveryStateElement) {
+            EveryStateElement everyStateElement = (EveryStateElement) stateElement;
+            processEveryStateElement(everyStateElement, sequenceExpression);
+        } else if (stateElement instanceof StreamStateElement) {
+            StreamStateElement streamStateElement = (StreamStateElement) stateElement;
+            processStreamStateElement(streamStateElement, sequenceExpression);
 
-                        if (stateElement2 instanceof StreamStateElement) {
-                            StreamStateElement streamStateElement = (StreamStateElement) stateElement2;
+        } else if (stateElement instanceof CountStateElement) {
+            CountStateElement countStateElement = (CountStateElement) stateElement;
+            processCountStateElement(countStateElement,sequenceExpression);
 
-                            // handle basic single input stream
-                            BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
-                            String streamId = basicSingleInputStream.getStreamId();
-//                                    System.out.println(basicSingleInputStream);
-                                    System.out.println("StreamId: " + basicSingleInputStream.getStreamId());
-                                    System.out.println("ReferenceId: " + basicSingleInputStream.getStreamReferenceId());
+        } else if (stateElement instanceof LogicalStateElement) {
+            LogicalStateElement logicalStateElement = (LogicalStateElement) stateElement;
+            processLogicalStateElemet(logicalStateElement, sequenceExpression);
+        }
+    }
 
-                            // handle stream handlers
-                            List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
-                            for (StreamHandler streamHandler : streamHandlerList) {
-                                if (streamHandler instanceof Filter) {
-                                    Filter filter = (Filter) streamHandler;
-                                    processFilter(filter, streamId);
-                                    //System.out.println(streamHandler);
-                                    // todo implement filter method
-                                    //setFilter((Filter) streamHandler);
-                                }
-                            }
+    public void processLogicalStateElemet(LogicalStateElement logicalStateElement, SequenceExpression sequenceExpression) {
+        LogicalStateElement.Type logicalStateElementType = logicalStateElement.getType();
 
-                        }
+        StreamStateElement streamStateElement1 = logicalStateElement.getStreamStateElement1();
+        StreamStateElement streamStateElement2 = logicalStateElement.getStreamStateElement2();
+
+        BasicSingleInputStream basicSingleInputStream1 = streamStateElement1.getBasicSingleInputStream();
+        String singleInputStreamStreamId1 = basicSingleInputStream1.getStreamId();
+        String singleInputStreamStreamReferenceId1 = basicSingleInputStream1.getStreamReferenceId();
+        List<StreamHandler> streamHandlerList1 = basicSingleInputStream1.getStreamHandlers();
+
+        InitialInputStream initialInputStream1 = new InitialInputStream();
+        initialInputStream1.setName(singleInputStreamStreamId1);
+        initialInputStream1.setReferenceId(singleInputStreamStreamReferenceId1);
+        sequenceExpression.addInputStreamName(initialInputStream1);
+        solidityContract.addInputStreamName(initialInputStream1);
+
+        String expression1 = "";
+        for (StreamHandler streamHandler : streamHandlerList1) {
+            if (streamHandler instanceof Filter) {
+                Filter filter = (Filter) streamHandler;
+                Expression[] expressions = filter.getParameters();
+                for (Expression expression : expressions) {
+                    expression1 = getFilterSequence(expression, "initial" + singleInputStreamStreamId1, sequenceExpression);
+
+                }
+
+            }
+        }
+
+        BasicSingleInputStream basicSingleInputStream2 = streamStateElement2.getBasicSingleInputStream();
+        String singleInputStreamStreamId2 = basicSingleInputStream2.getStreamId();
+        String singleInputStreamStreamReferenceId2 = basicSingleInputStream2.getStreamReferenceId();
+        List<StreamHandler> streamHandlerList2 = basicSingleInputStream2.getStreamHandlers();
+
+        InitialInputStream initialInputStream2 = new InitialInputStream();
+        initialInputStream2.setName(singleInputStreamStreamId2);
+        initialInputStream2.setReferenceId(singleInputStreamStreamReferenceId2);
+        sequenceExpression.addInputStreamName(initialInputStream2);
+        solidityContract.addInputStreamName(initialInputStream2);
+
+        String expression2 = "";
+        for (StreamHandler streamHandler : streamHandlerList2) {
+            if (streamHandler instanceof Filter) {
+                Filter filter = (Filter) streamHandler;
+                Expression[] expressions = filter.getParameters();
+                for (Expression expression : expressions) {
+                    expression2 = getFilterSequence(expression, "initial" + singleInputStreamStreamId2, sequenceExpression);
+                }
+
+            }
+        }
+        if (expression1.equals("")) {
+            expression1 = "incoming" + singleInputStreamStreamId1 + "Event";
+        }
+        if (expression2.equals("")) {
+            expression2 = "incoming" + singleInputStreamStreamId2 + "Event";
+        }
+
+        String type = "";
+        if (logicalStateElementType.equals(LogicalStateElement.Type.AND)) {
+            type = " && ";
+        } else if (logicalStateElementType.equals(LogicalStateElement.Type.OR)) {
+            type = " || ";
+        }
+
+        String logicalExpression = "(" + expression1 + type + expression2 + ")";
+        setExpression(sequenceExpression, logicalExpression);
+
+
+    }
+
+    public void processEveryStateElement(EveryStateElement everyStateElement, SequenceExpression sequenceExpression) {
+        StateElement stateElement = everyStateElement.getStateElement();
+        if (stateElement instanceof StreamStateElement) {
+            StreamStateElement streamStateElement = (StreamStateElement) stateElement;
+            BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
+            String singleInputStreamStreamId = basicSingleInputStream.getStreamId();
+            String singleInputStreamStreamReferenceId = basicSingleInputStream.getStreamReferenceId();
+            List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
+
+            InitialInputStream initialInputStream = new InitialInputStream();
+            initialInputStream.setName(singleInputStreamStreamId);
+            initialInputStream.setReferenceId(singleInputStreamStreamReferenceId);
+            initialInputStream.setInitial(true);
+            sequenceExpression.addInputStreamName(initialInputStream);
+            solidityContract.addInputStreamName(initialInputStream);
+
+            for (StreamHandler streamHandler : streamHandlerList) {
+                if (streamHandler instanceof Filter) {
+                    Filter filter = (Filter) streamHandler;
+                    Expression[] expressions = filter.getParameters();
+                    for (Expression expression : expressions) {
+                        String output = getFilterSequence(expression, "initial" + singleInputStreamStreamId, sequenceExpression);
+                        initialInputStream.setExpression(output);
+                        setExpression(sequenceExpression, output);
+
                     }
 
-                    //get next state element
-                    StateElement stateElementNextStateElement = nextStateElement.getNextStateElement();
+                }
+            }
+            sequenceExpression.setInitialStreamName(initialInputStream);
 
-                    // process next state element
-                    if (stateElementNextStateElement instanceof NextStateElement) {
-                        NextStateElement nextStateElement1 = (NextStateElement) stateElementNextStateElement;
 
-                        //get state element
-                        StateElement stateElement2 = nextStateElement1.getStateElement();
+        }
+    }
 
-                        //process state element
-                        if (stateElement2 instanceof CountStateElement) {
-                            System.out.println(stateElementNextStateElement);
-                            CountStateElement countStateElement = (CountStateElement) stateElement2;
-                        }
+    public void setExpression(SequenceExpression sequenceExpression, String expression) {
+        if (sequenceExpression.getExpression().equals("")) {
+            sequenceExpression.setExpression(expression);
+        } else {
+            String newExpression = sequenceExpression.getExpression() + " && " + expression;
+            sequenceExpression.setExpression(newExpression);
+        }
+    }
 
-                        // get next state element
-                        StateElement stateElement3 = nextStateElement1.getNextStateElement();
+    public void processCountStateElement(CountStateElement countStateElement,SequenceExpression sequenceExpression) {
+        StreamStateElement streamStateElement = countStateElement.getStreamStateElement();
+        int maxCount = countStateElement.getMaxCount();
+        int minCount = countStateElement.getMinCount();
 
-                        //process next state element
-                        if (stateElement3 instanceof StreamStateElement) {
-                            StreamStateElement streamStateElement = (StreamStateElement) stateElement3;
-                            BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
+        BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
+        String singleInputStreamStreamId = basicSingleInputStream.getStreamId();
+        String singleInputStreamStreamReferenceId = basicSingleInputStream.getStreamReferenceId();
 
-                            System.out.println(basicSingleInputStream);
-                            System.out.println("StreamId: " + basicSingleInputStream.getStreamId());
-                            System.out.println("ReferenceId: " + basicSingleInputStream.getStreamReferenceId());
-                            String streamId = basicSingleInputStream.getStreamId();
+        InitialInputStream initialInputStream = new InitialInputStream();
+        initialInputStream.setName(singleInputStreamStreamId);
+        initialInputStream.setReferenceId(singleInputStreamStreamReferenceId);
+        sequenceExpression.addInputStreamName(initialInputStream);
+        solidityContract.addInputStreamName(initialInputStream);
 
-                            List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
-                            for (StreamHandler streamHandler : streamHandlerList) {
-                                if (streamHandler instanceof Filter) {
-//                                    System.out.println(streamHandler);
-                                    // todo implement filter method
-                                    Filter filter = (Filter) streamHandler;
-                                    processFilter(filter, streamId);
-                                }
-                            }
+        List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
+
+        for (StreamHandler streamHandler : streamHandlerList) {
+            if (streamHandler instanceof Filter) {
+                Filter filter = (Filter) streamHandler;
+                Expression[] expressions = filter.getParameters();
+                for (Expression expression : expressions) {
+                    String output = getFilterSequence(expression, "incoming" + singleInputStreamStreamId, sequenceExpression);
+                    initialInputStream.setExpression(output);
+                    setExpression(sequenceExpression, output);
+
+                }
+
+            }
+        }
+    }
+
+    private void processStreamStateElement(StreamStateElement streamStateElement, SequenceExpression sequenceExpression) {
+        BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
+        String singleInputStreamStreamId = basicSingleInputStream.getStreamId();
+        String singleInputStreamStreamReferenceId = basicSingleInputStream.getStreamReferenceId();
+
+        InitialInputStream initialInputStream = new InitialInputStream();
+        initialInputStream.setName(singleInputStreamStreamId);
+        initialInputStream.setReferenceId(singleInputStreamStreamReferenceId);
+        sequenceExpression.addInputStreamName(initialInputStream);
+        solidityContract.addInputStreamName(initialInputStream);
+        List<StreamHandler> streamHandlerList = basicSingleInputStream.getStreamHandlers();
+
+        for (StreamHandler streamHandler : streamHandlerList) {
+            if (streamHandler instanceof Filter) {
+                Filter filter = (Filter) streamHandler;
+                Expression[] expressions = filter.getParameters();
+                for (Expression expression : expressions) {
+                    String output = getFilterSequence(expression, "incoming" + singleInputStreamStreamId, sequenceExpression);
+                    initialInputStream.setExpression(output);
+                    setExpression(sequenceExpression, output);
+
+                }
+
+            }
+        }
+    }
+
+    public String getFilterSequence(Expression expression, String streamId, SequenceExpression sequenceExpression) {
+        String event = streamId + "Event.";
+        String filterExpression = "";
+        if (expression instanceof And) {
+            And andExpression = (And) expression;
+            String leftExpression = getFilterSequence(andExpression.getLeftExpression(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(andExpression.getRightExpression(), streamId, sequenceExpression);
+
+            return "(" + leftExpression + " && " + rightExpression + ")";
+        } else if (expression instanceof Or) {
+            Or orExpression = (Or) expression;
+            String leftExpression = getFilterSequence(orExpression.getLeftExpression(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(orExpression.getRightExpression(), streamId, sequenceExpression);
+
+            return "(" + leftExpression + " || " + rightExpression + ")";
+        } else if (expression instanceof Compare) {
+            Compare compareExpression = (Compare) expression;
+            String leftExpression = getFilterSequence(compareExpression.getLeftExpression(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(compareExpression.getRightExpression(), streamId, sequenceExpression);
+            String operatorString = getOperatorString(compareExpression.getOperator());
+            return "(" + leftExpression + " " + operatorString + " " + rightExpression + ")";
+
+        } else if (expression instanceof BoolConstant) {
+            BoolConstant boolExpression = (BoolConstant) expression;
+            return "" + boolExpression.getValue();
+
+        } else if (expression instanceof DoubleConstant) {
+            DoubleConstant doubleExpression = (DoubleConstant) expression;
+            return "" + doubleExpression.getValue();
+
+        } else if (expression instanceof FloatConstant) {
+            FloatConstant constant = (FloatConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof IntConstant) {
+            IntConstant constant = (IntConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof LongConstant) {
+            LongConstant constant = (LongConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof StringConstant) {
+            StringConstant constant = (StringConstant) expression;
+            return "" + constant.getValue();
+
+        } else if (expression instanceof Variable) {
+            Variable constant = (Variable) expression;
+            if (constant.getStreamId() == null) {
+                return event + constant.getAttributeName();
+            } else {
+                List<InitialInputStream> initialInputStreams = sequenceExpression.getInputStreamNames();
+                for (InitialInputStream initialInputStream : initialInputStreams) {
+                    if (initialInputStream.getReferenceId().equals(constant.getStreamId())) {
+                        if (initialInputStream.isInitial()) {
+                            return "initial" + initialInputStream.getName() + "Event." + constant.getAttributeName();
+                        } else {
+                            return "incoming" + initialInputStream.getName() + "Event." + constant.getAttributeName();
                         }
                     }
                 }
 
-            } else if (type.equals(StateInputStream.Type.SEQUENCE)) {
-                System.out.println(StateInputStream.Type.SEQUENCE);
             }
+
+        } else if (expression instanceof Add) {
+            Add addExpression = (Add) expression;
+            String leftExpression = getFilterSequence(addExpression.getLeftValue(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(addExpression.getRightValue(), streamId, sequenceExpression);
+            return "(" + leftExpression + " + " + rightExpression + ")";
+        } else if (expression instanceof Subtract) {
+            Subtract subtract = (Subtract) expression;
+            String leftExpression = getFilterSequence(subtract.getLeftValue(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(subtract.getRightValue(), streamId, sequenceExpression);
+            return "(" + leftExpression + " - " + rightExpression + ")";
+        } else if (expression instanceof Multiply) {
+            Multiply multiply = (Multiply) expression;
+            String leftExpression = getFilterSequence(multiply.getLeftValue(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(multiply.getRightValue(), streamId, sequenceExpression);
+            return "(" + leftExpression + " * " + rightExpression + ")";
+        } else if (expression instanceof Divide) {
+            Divide divide = (Divide) expression;
+            String leftExpression = getFilterSequence(divide.getLeftValue(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(divide.getRightValue(), streamId, sequenceExpression);
+            return "(" + leftExpression + "/" + rightExpression + ")";
+        } else if (expression instanceof Mod) {
+            Mod mod = (Mod) expression;
+            String leftExpression = getFilterSequence(mod.getLeftValue(), streamId, sequenceExpression);
+            String rightExpression = getFilterSequence(mod.getRightValue(), streamId, sequenceExpression);
+            return "(" + leftExpression + "%" + rightExpression + ")";
+        }
+
+        return filterExpression;
+    }
+
+    public void processStreamFilter(Filter filter, String streamId) {
+        Expression[] expressions = filter.getParameters();
+        for (Expression expression : expressions) {
+            //SequenceExpression sequenceExpression = new SequenceExpression();
+            //sequenceExpression.setInputStreamName(streamId);
+            String output = getFilterExpression(expression, streamId);
+            //System.out.println(output);
+            //sequenceExpression.setExpression(output);
+            //solidityContract.addSequenceExpression(sequenceExpression);
         }
     }
 
@@ -294,22 +527,16 @@ public class CodeGenerator {
 
         for (OutputAttribute outputAttribute : outputAttributeList) {
 
-            // get rename
-            //String rename = outputAttribute.getRename();
-            // todo process rename
-
-            // get expression
             Expression expression = outputAttribute.getExpression();
             if (expression instanceof AttributeFunction) {
                 List<WindowFunction> windowFunctionList = new ArrayList<>();
                 StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
                 AttributeFunction attributeFunction = (AttributeFunction) expression;
                 String functionName = attributeFunction.getName();
-               // String streamId = attributeFunction.;
+
                 WindowFunction windowFunction = new WindowFunction();
                 switch (functionName) {
                     case "avg": {
-                        //smartContract.setAverageFunction(true);
                         AverageFunction averageFunction = new AverageFunction();
                         Variable variable = (Variable) attributeFunction.getParameters()[0];
                         averageFunction.setFunctionName(functionName + variable.getAttributeName());
@@ -323,7 +550,7 @@ public class CodeGenerator {
                                 averageFunction.setType(attribute.getType());
                             }
                         }
-                   windowFunction.addAverageFunction(averageFunction);
+                        windowFunction.addAverageFunction(averageFunction);
                         break;
                     }
                     case "sum": {
@@ -340,7 +567,7 @@ public class CodeGenerator {
                                 sumFunction.setType(attribute.getType());
                             }
                         }
-//
+
                         windowFunction.addSumFunction(sumFunction);
                         break;
                     }
@@ -358,7 +585,6 @@ public class CodeGenerator {
                                 maxFunction.setType(attribute.getType());
                             }
                         }
-//
                         windowFunction.addMaxFunction(maxFunction);
                         break;
                     }
@@ -376,7 +602,7 @@ public class CodeGenerator {
                                 minFunction.setType(attribute.getType());
                             }
                         }
-//
+
                         windowFunction.addMinFunction(minFunction);
                         break;
                     }
@@ -408,10 +634,12 @@ public class CodeGenerator {
 
                     streamAttribute.setName(variable.getAttributeName());
                     streamAttribute.setRename(outputAttribute.getRename());
-
+                    // System.out.println(variable);
                     List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+
                     List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
                     for (StreamAttribute attribute : streamAttributeList) {
+                        //System.out.println();
                         if (attribute.getName().equals(streamAttribute.getName())) {
                             streamAttribute.setType(attribute.getType());
                         }
@@ -420,47 +648,174 @@ public class CodeGenerator {
                 }
 
             } else if (expression instanceof Variable) {
-                //System.out.println(expression);
                 Variable variable = (Variable) expression;
-
-                String streamId = variable.getStreamId();
-                //System.out.println(streamId);
-                StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
-
-                streamAttribute.setName(variable.getAttributeName());
-                streamAttribute.setRename(outputAttribute.getRename());
-                if (streamId == null) {
-                    List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
-                    List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
-                    for (StreamAttribute attribute : streamAttributeList) {
-                        if (attribute.getName().equals(streamAttribute.getName())) {
-                            streamAttribute.setType(attribute.getType());
-                        }
-                    }
-                }
-
-                moderatedOutputAttributes.add(streamAttribute);
+                moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                solidityContract.addSequenceOutPuts(processSequenceVariable(variable));
             } else if (expression instanceof Subtract) {
+                System.out.println(expression);
                 Subtract subtract = (Subtract) expression;
                 Expression leftValue = subtract.getLeftValue();
                 Expression rightValue = subtract.getRightValue();
 
-                System.out.println(rightValue);
-
+                String subtractLeftExpression = "";
                 if (leftValue instanceof Variable) {
                     Variable variable = (Variable) leftValue;
-                    System.out.println(variable.getStreamId());
+                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                    subtractLeftExpression = processSequenceVariable(variable);
                 }
-
+                String subtractRightExpression = "";
                 if (rightValue instanceof Variable) {
                     Variable variable = (Variable) rightValue;
-                    System.out.println(variable.getStreamId());
+                    subtractRightExpression = processSequenceVariable(variable);
+
                 }
+                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " - " + subtractRightExpression + ")");
+            } else if (expression instanceof Add) {
+                Add add = (Add) expression;
+                Expression leftValue = add.getLeftValue();
+                Expression rightValue = add.getRightValue();
+
+                String subtractLeftExpression = "";
+                if (leftValue instanceof Variable) {
+                    Variable variable = (Variable) leftValue;
+                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+
+                    subtractLeftExpression = processSequenceVariable(variable);
+                }
+                String subtractRightExpression = "";
+                if (rightValue instanceof Variable) {
+                    Variable variable = (Variable) rightValue;
+                    subtractRightExpression = processSequenceVariable(variable);
+                }
+                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " + " + subtractRightExpression + ")");
+            }else if (expression instanceof Multiply) {
+                Multiply multiply = (Multiply) expression;
+                Expression leftValue = multiply.getLeftValue();
+                Expression rightValue = multiply.getRightValue();
+
+                String subtractLeftExpression = "";
+                if (leftValue instanceof Variable) {
+                    Variable variable = (Variable) leftValue;
+                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                    subtractLeftExpression = processSequenceVariable(variable);
+                }
+                String subtractRightExpression = "";
+                if (rightValue instanceof Variable) {
+                    Variable variable = (Variable) rightValue;
+                    subtractRightExpression = processSequenceVariable(variable);
+                }
+                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " * " + subtractRightExpression + ")");
+            }else if (expression instanceof Divide) {
+                Divide divide = (Divide) expression;
+                Expression leftValue = divide.getLeftValue();
+                Expression rightValue = divide.getRightValue();
+
+                String subtractLeftExpression = "";
+                if (leftValue instanceof Variable) {
+                    Variable variable = (Variable) leftValue;
+                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                    subtractLeftExpression = processSequenceVariable(variable);
+                }
+                String subtractRightExpression = "";
+                if (rightValue instanceof Variable) {
+                    Variable variable = (Variable) rightValue;
+                    subtractRightExpression = processSequenceVariable(variable);
+                }
+                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " / " + subtractRightExpression + ")");
+            }else if (expression instanceof Mod) {
+                Mod mod = (Mod) expression;
+                Expression leftValue = mod.getLeftValue();
+                Expression rightValue = mod.getRightValue();
+
+                String subtractLeftExpression = "";
+                if (leftValue instanceof Variable) {
+                    Variable variable = (Variable) leftValue;
+                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                    subtractLeftExpression = processSequenceVariable(variable);
+                }
+                String subtractRightExpression = "";
+                if (rightValue instanceof Variable) {
+                    Variable variable = (Variable) rightValue;
+                    subtractRightExpression = processSequenceVariable(variable);
+                }
+                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " % " + subtractRightExpression + ")");
             }
         }
 
         moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
         this.solidityContract.setStreamOutputAttributeList(moderatedOutputAttributes);
+    }
+
+
+    public String processSequenceVariable(Variable variable) {
+        String output = "";
+        String streamId = variable.getStreamId();
+        System.out.println(variable);
+        String position ="";
+
+
+
+        if (streamId != null) {
+            List<InitialInputStream> initialInputStreams = solidityContract.getInputStreamNames();
+            for (InitialInputStream initialInputStream : initialInputStreams) {
+                System.out.println(initialInputStream.getReferenceId());
+                if (initialInputStream.getReferenceId() != null) {
+                    if (initialInputStream.getReferenceId().equals(streamId)) {
+
+                        if (initialInputStream.isInitial()) {
+                            if(variable.getStreamIndex()!=null) {
+                                if (variable.getStreamIndex() <= -2) {
+                                    position = "[initial" + initialInputStream.getName() + "Event.length-" + (variable.getStreamIndex() + 1) + "]";
+                                } else if (variable.getStreamIndex() >= 0) {
+                                    position = "[" + variable.getStreamIndex() + "]";
+                                }
+                            }
+                            output = "initial" + initialInputStream.getName() + "Event"+position+"." + variable.getAttributeName();
+                        } else {
+                            if(variable.getStreamIndex()!=null) {
+                                if (variable.getStreamIndex() <= -2) {
+                                    position = "[incoming" + initialInputStream.getName() + "Event.length-" + (-1)*(variable.getStreamIndex() + 1) + "]";
+                                } else if (variable.getStreamIndex() >= 0) {
+                                    position = "[" + variable.getStreamIndex() + "]";
+                                }
+                            }
+                            output = "incoming" + initialInputStream.getName() + "Event"+position+"." + variable.getAttributeName();
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println(output);
+        return output;
+    }
+
+    public StreamOutputAttribute processVariable(Variable variable, OutputAttribute outputAttribute) {
+        String streamId = variable.getStreamId();
+
+        StreamOutputAttribute streamOutputAttribute = new StreamOutputAttribute();
+
+        streamOutputAttribute.setName(variable.getAttributeName());
+        streamOutputAttribute.setRename(outputAttribute.getRename());
+
+        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+        for (InputStreamEvent inputStreamEvent : inputStreamEventList) {
+
+            List<String> referenceIds = inputStreamEvent.getReferenceIds();
+            if (referenceIds.contains(streamId)) {
+                for (StreamAttribute attribute : inputStreamEvent.getStreamAttributeList()) {
+                    if (attribute.getName().equals(streamOutputAttribute.getName())) {
+                        streamOutputAttribute.setType(attribute.getType());
+                    }
+                }
+            } else {
+                for (StreamAttribute attribute : inputStreamEvent.getStreamAttributeList()) {
+                    if (attribute.getName().equals(streamOutputAttribute.getName())) {
+                        streamOutputAttribute.setType(attribute.getType());
+                    }
+                }
+            }
+        }
+        return streamOutputAttribute;
     }
 
     public String getAttributeType(Attribute.Type type) {
@@ -493,23 +848,18 @@ public class CodeGenerator {
 
     public void processFilter(Filter filter, String streamId) {
         Expression[] expressions = filter.getParameters();
-        List<FilterExpression> filterExpressionList = new ArrayList<>();
-
         for (Expression expression : expressions) {
             FilterExpression filterExpression = new FilterExpression();
-            String output = getFilterExpression(expression, streamId);
+            String output = getFilterExpression(expression, "incoming" + streamId);
             filterExpression.setInputStreamName(streamId);
             filterExpression.setExpression(output);
-            filterExpressionList.add(filterExpression);
+            solidityContract.addFilterExpression(filterExpression);
         }
-        solidityContract.setFilterExpressionList(filterExpressionList);
     }
 
     public String getFilterExpression(Expression expression, String streamId) {
-
-        String event = "incoming" + streamId + "Event.";
+        String event = streamId + "Event.";
         String filterExpression = "";
-
         if (expression instanceof And) {
             And andExpression = (And) expression;
             String leftExpression = getFilterExpression(andExpression.getLeftExpression(), streamId);
@@ -553,14 +903,35 @@ public class CodeGenerator {
             StringConstant constant = (StringConstant) expression;
             return "" + constant.getValue();
 
-        } else if (expression instanceof TimeConstant) {
-            TimeConstant constant = (TimeConstant) expression;
-            return "" + constant.getValue();
-
         } else if (expression instanceof Variable) {
             Variable constant = (Variable) expression;
             return event + constant.getAttributeName();
 
+        } else if (expression instanceof Add) {
+            Add addExpression = (Add) expression;
+            String leftExpression = getFilterExpression(addExpression.getLeftValue(), streamId);
+            String rightExpression = getFilterExpression(addExpression.getRightValue(), streamId);
+            return "(" + leftExpression + " + " + rightExpression + ")";
+        } else if (expression instanceof Subtract) {
+            Subtract subtract = (Subtract) expression;
+            String leftExpression = getFilterExpression(subtract.getLeftValue(), streamId);
+            String rightExpression = getFilterExpression(subtract.getRightValue(), streamId);
+            return "(" + leftExpression + " - " + rightExpression + ")";
+        } else if (expression instanceof Multiply) {
+            Multiply multiply = (Multiply) expression;
+            String leftExpression = getFilterExpression(multiply.getLeftValue(), streamId);
+            String rightExpression = getFilterExpression(multiply.getRightValue(), streamId);
+            return "(" + leftExpression + " * " + rightExpression + ")";
+        } else if (expression instanceof Divide) {
+            Divide divide = (Divide) expression;
+            String leftExpression = getFilterExpression(divide.getLeftValue(), streamId);
+            String rightExpression = getFilterExpression(divide.getRightValue(), streamId);
+            return "(" + leftExpression + "/" + rightExpression + ")";
+        } else if (expression instanceof Mod) {
+            Mod mod = (Mod) expression;
+            String leftExpression = getFilterExpression(mod.getLeftValue(), streamId);
+            String rightExpression = getFilterExpression(mod.getRightValue(), streamId);
+            return "(" + leftExpression + "%" + rightExpression + ")";
         }
 
         return filterExpression;
