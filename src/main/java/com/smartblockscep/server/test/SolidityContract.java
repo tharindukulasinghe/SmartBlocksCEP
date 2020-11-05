@@ -1,6 +1,7 @@
 package com.smartblockscep.server.test;
 
 import com.smartblockscep.server.InputStreamEvent;
+import com.smartblockscep.server.QueryType;
 import com.smartblockscep.server.StreamOutputAttribute;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ public class SolidityContract {
     //todo find a better way
     private List<InitialInputStream> inputStreamNames=new ArrayList<>();
     private List<String> sequenceOutPuts=new ArrayList<>();
+    private QueryType queryType;
 
     public List<InputStreamEvent> getInputStreamEventList() {
         return inputStreamEventList;
