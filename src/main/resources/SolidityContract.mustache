@@ -4,147 +4,132 @@ pragma experimental ABIEncoderV2;
 contract {{name}} {
 
 {{#inputStreamEventList}}
-struct {{inputStreamName}}Event {
-{{#streamAttributeList}}
-    {{type}} {{name}};
+    struct {{inputStreamName}}Event {
+    {{#streamAttributeList}}
+        {{type}} {{name}};
 {{/streamAttributeList}}
-}
+    }
 {{/inputStreamEventList}}
 
-struct {{outputStreamName}}Event {
-{{#streamOutputAttributeList}}
-    {{type}} {{rename}};
-{{/streamOutputAttributeList}}
-}
+    struct {{outputStreamName}}Event {
+    {{#streamOutputAttributeList}}
+        {{type}} {{rename}};
+    {{/streamOutputAttributeList}}
+    }
 
-{{outputStreamName}}Event[] public {{outputStreamName}}Events;
+    {{outputStreamName}}Event[] public {{outputStreamName}}Events;
 
 {{#filterExpressionList}}
-function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public{
-    if {{{expression}}}{
-        {{outputStreamName}}Events.push({{outputStreamName}}Event({
-            {{#streamOutputAttributeList}}
-            {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
-            {{/streamOutputAttributeList}}
-        }));
+    function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public{
+        if {{{expression}}}{
+            {{outputStreamName}}Events.push({{outputStreamName}}Event({
+                {{#streamOutputAttributeList}}
+                {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
+                {{/streamOutputAttributeList}}
+            }));
+        }
     }
-}
 
 {{/filterExpressionList}}
 
 {{#windowExpressionList}}
-{{inputStreamName}}Event[{{windowLength}}] public window;
-uint256 public index;
+    {{inputStreamName}}Event[{{windowLength}}] public window;
+    uint256 public index;
 
-{{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
+    {{outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
-function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
-    if(index == window.length) {
-        index = 0;
+    function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
+        if(index == window.length) {
+            index = 0;
+        }
+        window[index] = incomingTempStreamEvent;
+        index++;
+        check();
     }
-    window[index] = incomingTempStreamEvent;
-    index++;
-    check();
-}
 
-function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public {
-    set(incoming{{inputStreamName}}Event);
-}
-
-function check() private {
-    if(index == 5){
-        processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
-        {{#outAttributes}}
-            {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
-        {{/outAttributes}}
-    }));
+    function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public {
+        set(incoming{{inputStreamName}}Event);
     }
-}
+
+    function check() private {
+        if(index == 5){
+            processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
+            {{#outAttributes}}
+                {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
+            {{/outAttributes}}
+        }));
+        }
+    }
 {{/windowExpressionList}}
 
-{{#patternExpressionList}}
-    {{#inputStreamEventList}}
-        {{inputStreamName}}Event[] public {{inputStreamName}}Events;
-    {{/inputStreamEventList}}
-
-{{/patternExpressionList}}
-
 {{#sequenceExpressionList}}
-{{initialStreamName.name}}Event private initial{{initialStreamName.name}}Event;
+    {{initialStreamName.name}}Event private initial{{initialStreamName.name}}Event;
 
-function process({{#inputStreamNames}}{{^isInitial}}{{name}}Event memory incoming{{name}}Event,{{/isInitial}}{{/inputStreamNames}}) public{
+    function process({{#inputStreamNames}}{{^isInitial}}{{name}}Event memory incoming{{name}}Event,{{/isInitial}}{{/inputStreamNames}}) public{
 
-    if ({{{expression}}}){
-        {{outputStreamName}}Events.push({{outputStreamName}}Event({
-            {{#sequenceOutPuts}}
-                {{{.}}},
-            {{/sequenceOutPuts}}
-        }));
+        if ({{{expression}}}){
+            {{outputStreamName}}Events.push({{outputStreamName}}Event({
+                {{#sequenceOutPuts}}
+                    {{{.}}},
+                {{/sequenceOutPuts}}
+            }));
+        }
+
+        initial{{initialStreamName.name}}Event = incoming{{initialStreamName.name}}Event;
     }
-
-    initial{{initialStreamName.name}}Event = incoming{{initialStreamName.name}}Event;
-}
-
 {{/sequenceExpressionList}}
 
 {{#windowFunctionList}}
 {{#averageFunctions}}
-function {{functionName}}() private view returns ({{type}}) {
-    {{type}} sum = 0;
-    for({{type}} i = 0; i < index; i++){
-        sum += window[i].{{member}};
-    }
-    {{type}} avg = sum / (index);
+    function {{functionName}}() private view returns ({{type}}) {
+        {{type}} sum = 0;
+        for({{type}} i = 0; i < index; i++){
+            sum += window[i].{{member}};
+        }
+        {{type}} avg = sum / (index);
 
-    return avg;
-}
+        return avg;
+    }
 {{/averageFunctions}}
-
 {{#sumFunctions}}
-function {{functionName}}() private view returns ({{type}}) {
-    {{type}} sum = 0;
-    for({{type}} i = 0; i < index; i++){
-        sum += window[i].{{member}};
-    }
+    function {{functionName}}() private view returns ({{type}}) {
+        {{type}} sum = 0;
+        for({{type}} i = 0; i < index; i++){
+            sum += window[i].{{member}};
+        }
 
-    return sum;
-}
+        return sum;
+    }
 {{/sumFunctions}}
-
 {{#maxFunctions}}
-function {{functionName}}() private view returns ({{type}}) {
-    {{type}} max = window[0].{{member}};
-    for({{type}} i = 0; i < index; i++){
-        if(window[i].{{member}} > max){
-            max = window[i].{{member}};
+    function {{functionName}}() private view returns ({{type}}) {
+        {{type}} max = window[0].{{member}};
+        for({{type}} i = 0; i < index; i++){
+            if(window[i].{{member}} > max){
+                max = window[i].{{member}};
+            }
         }
+
+        return max;
     }
-
-    return max;
-}
-
 {{/maxFunctions}}
-
 {{#minFunctions}}
-function {{functionName}}() private view returns ({{type}}) {
-    {{type}} min = window[0].{{member}};
-    for({{type}} i = 0; i < index; i++){
-        if(window[i].{{member}} < min){
-            min = window[i].{{member}};
+    function {{functionName}}() private view returns ({{type}}) {
+        {{type}} min = window[0].{{member}};
+        for({{type}} i = 0; i < index; i++){
+            if(window[i].{{member}} < min){
+                min = window[i].{{member}};
+            }
         }
+
+        return min;
     }
-
-    return min;
-}
-
 {{/minFunctions}}
-
 {{#countFunctions}}
-function {{functionName}}() private view returns ({{type}}) {
-    {{type}} count = window.length;
-    return count;
-}
-
+    function {{functionName}}() private view returns ({{type}}) {
+        {{type}} count = window.length;
+        return count;
+    }
  {{/countFunctions}}
 {{/windowFunctionList}}
 }

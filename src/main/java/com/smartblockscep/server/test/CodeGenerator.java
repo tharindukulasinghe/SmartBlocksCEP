@@ -37,7 +37,7 @@ public class CodeGenerator {
     SolidityContract solidityContract = new SolidityContract();
 
     public String processOutput(SiddhiApp siddhiApp) {
-        System.out.println(siddhiApp);
+       // System.out.println(siddhiApp);
 
         // process stream definition
         Map<String, StreamDefinition> streamDefinitionMap = siddhiApp.getStreamDefinitionMap();
@@ -174,7 +174,7 @@ public class CodeGenerator {
             StateInputStream.Type type = stateInputStream.getStateType();
 
             if (type.equals(StateInputStream.Type.PATTERN)) {
-                System.out.println(stateInputStream);
+                // System.out.println(stateInputStream);
 
                 StateElement stateElement = stateInputStream.getStateElement();
                 TimeConstant timeConstant = stateInputStream.getWithinTime();
@@ -184,7 +184,7 @@ public class CodeGenerator {
                 processStateElement(stateElement, sequenceExpression);
 
             } else if (type.equals(StateInputStream.Type.SEQUENCE)) {
-                System.out.println(stateInputStream.getWithinTime());
+                // System.out.println(stateInputStream.getWithinTime());
                 SequenceExpression sequenceExpression = new SequenceExpression();
                 solidityContract.addSequenceExpression(sequenceExpression);
                 StateElement stateElement = stateInputStream.getStateElement();
@@ -339,7 +339,8 @@ public class CodeGenerator {
         StreamStateElement streamStateElement = countStateElement.getStreamStateElement();
         int maxCount = countStateElement.getMaxCount();
         int minCount = countStateElement.getMinCount();
-
+        System.out.println(maxCount);
+        System.out.println(minCount);
         BasicSingleInputStream basicSingleInputStream = streamStateElement.getBasicSingleInputStream();
         String singleInputStreamStreamId = basicSingleInputStream.getStreamId();
         String singleInputStreamStreamReferenceId = basicSingleInputStream.getStreamReferenceId();
@@ -457,7 +458,6 @@ public class CodeGenerator {
                 }
 
             }
-
         } else if (expression instanceof Add) {
             Add addExpression = (Add) expression;
             String leftExpression = getFilterSequence(addExpression.getLeftValue(), streamId, sequenceExpression);
@@ -486,18 +486,6 @@ public class CodeGenerator {
         }
 
         return filterExpression;
-    }
-
-    public void processStreamFilter(Filter filter, String streamId) {
-        Expression[] expressions = filter.getParameters();
-        for (Expression expression : expressions) {
-            //SequenceExpression sequenceExpression = new SequenceExpression();
-            //sequenceExpression.setInputStreamName(streamId);
-            String output = getFilterExpression(expression, streamId);
-            //System.out.println(output);
-            //sequenceExpression.setExpression(output);
-            //solidityContract.addSequenceExpression(sequenceExpression);
-        }
     }
 
     private void processSelector(Selector selector) {
@@ -546,7 +534,7 @@ public class CodeGenerator {
                         List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
                         List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
                         for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(streamAttribute.getName())) {
+                            if (attribute.getName().equals(variable.getAttributeName())) {
                                 averageFunction.setType(attribute.getType());
                             }
                         }
@@ -563,7 +551,7 @@ public class CodeGenerator {
                         List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
                         List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
                         for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(streamAttribute.getName())) {
+                            if (attribute.getName().equals(variable.getAttributeName())) {
                                 sumFunction.setType(attribute.getType());
                             }
                         }
@@ -580,8 +568,9 @@ public class CodeGenerator {
 
                         List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
                         List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+
                         for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(streamAttribute.getName())) {
+                            if (attribute.getName().equals(variable.getAttributeName())) {
                                 maxFunction.setType(attribute.getType());
                             }
                         }
@@ -598,7 +587,7 @@ public class CodeGenerator {
                         List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
                         List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
                         for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(streamAttribute.getName())) {
+                            if (attribute.getName().equals(variable.getAttributeName())) {
                                 minFunction.setType(attribute.getType());
                             }
                         }
@@ -616,7 +605,7 @@ public class CodeGenerator {
                         List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
                         List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
                         for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(streamAttribute.getName())) {
+                            if (attribute.getName().equals(variable.getAttributeName())) {
                                 countFunction.setType(attribute.getType());
                             }
                         }
@@ -652,7 +641,6 @@ public class CodeGenerator {
                 moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
                 solidityContract.addSequenceOutPuts(processSequenceVariable(variable));
             } else if (expression instanceof Subtract) {
-                System.out.println(expression);
                 Subtract subtract = (Subtract) expression;
                 Expression leftValue = subtract.getLeftValue();
                 Expression rightValue = subtract.getRightValue();
@@ -750,15 +738,11 @@ public class CodeGenerator {
     public String processSequenceVariable(Variable variable) {
         String output = "";
         String streamId = variable.getStreamId();
-        System.out.println(variable);
         String position ="";
-
-
 
         if (streamId != null) {
             List<InitialInputStream> initialInputStreams = solidityContract.getInputStreamNames();
             for (InitialInputStream initialInputStream : initialInputStreams) {
-                System.out.println(initialInputStream.getReferenceId());
                 if (initialInputStream.getReferenceId() != null) {
                     if (initialInputStream.getReferenceId().equals(streamId)) {
 
@@ -785,7 +769,6 @@ public class CodeGenerator {
                 }
             }
         }
-        System.out.println(output);
         return output;
     }
 

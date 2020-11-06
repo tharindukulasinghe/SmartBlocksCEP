@@ -3,25 +3,30 @@ pragma experimental ABIEncoderV2;
 
 contract {{name}} {
 
+{{#inputStreamEventList}}
     {{inputStreamName}}Event[{{windowLength}}] public window;
+{{/inputStreamEventList}}
     uint256 public index = 0;
     uint256 public lastBlockSetNumber = -1;
     uint256 public windowLength = {{windowLength}}
 
+{{#inputStreamEventList}}
     struct {{inputStreamName}}Event {
-    {{#attributes}}
+    {{#streamAttributeList}}
         {{type}} {{name}};
-    {{/attributes}}
+    {{/streamAttributeList}}
     }
+{{/inputStreamEventList}}
 
     struct {{outputStreamName}}Event {
-    {{#outAttributes}}
+    {{#streamOutputAttributeList}}
         {{type}} {{rename}};
-    {{/outAttributes}}
+    {{/streamOutputAttributeList}}
     }
 
     {{ outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
+{{#inputStreamEventList}}
     function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
         if(lastBlockSetNumber == -1) {
             latBlockSetNumber = block.number;
@@ -43,7 +48,7 @@ contract {{name}} {
     function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public {
         set(incoming{{inputStreamName}}Event);
     }
-
+{{/inputStreamEventList}}
     function check() private {
             processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
             {{#outAttributes}}
@@ -51,7 +56,7 @@ contract {{name}} {
             {{/outAttributes}}
             }));
     }
-
+{{#windowFunctionList}}
     {{#averageFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
         {{type}} sum = 0;
@@ -65,42 +70,43 @@ contract {{name}} {
 
     {{#sumFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} sum = 0;
-        for({{type}} i = 0; i < index; i++){
-        sum += window[i].{{member}};
-        }
-        return sum;
+            {{type}} sum = 0;
+            for({{type}} i = 0; i < index; i++){
+                sum += window[i].{{member}};
+            }
+            return sum;
         }
     {{/sumFunctions}}
 
     {{#maxFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} max = window[0].{{member}};
-        for({{type}} i = 0; i < index; i++){
-        if(window[i].{{member}} > max){
-        max = window[i].{{member}};
-        }
-        }
-        return max;
+            {{type}} max = window[0].{{member}};
+            for({{type}} i = 0; i < index; i++){
+                if(window[i].{{member}} > max){
+                    max = window[i].{{member}};
+                }
+            }
+            return max;
         }
     {{/maxFunctions}}
 
     {{#minFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} min = window[0].{{member}};
-        for({{type}} i = 0; i < index; i++){
-        if(window[i].{{member}} < min){
-        min = window[i].{{member}};
-        }
-        }
-        return min;
+            {{type}} min = window[0].{{member}};
+            for({{type}} i = 0; i < index; i++){
+                if(window[i].{{member}} < min){
+                    min = window[i].{{member}};
+                }
+            }
+            return min;
         }
     {{/minFunctions}}
 
     {{#countFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} count = window.length;
-        return count;
+            {{type}} count = window.length;
+            return count;
         }
     {{/countFunctions}}
+{{/windowFunctionList}}
 }

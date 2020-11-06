@@ -131,4 +131,12 @@ public class SolidityContract {
     public void addSequenceOutPuts(String output){
         this.sequenceOutPuts.add(output);
     }
+
+    public QueryType getQueryType() {
+        return queryType;
+    }
+
+    public void setQueryType(QueryType queryType) {
+        this.queryType = queryType;
+    }
 }
