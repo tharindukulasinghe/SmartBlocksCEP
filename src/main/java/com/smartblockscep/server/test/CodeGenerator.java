@@ -52,6 +52,8 @@ public class CodeGenerator {
                 // handle input stream
                 InputStream inputStream = query.getInputStream();
                 processInputStream(inputStream);
+                System.out.println(query);
+
 
                 // handle selector
                 Selector selector = query.getSelector();
@@ -65,7 +67,7 @@ public class CodeGenerator {
 
         Mustache m;
 
-        if(solidityContract.getQueryType()== QueryType.SlidingWindow){
+        if(solidityContract.getQueryType() == QueryType.SlidingWindow){
             MustacheFactory mf = new DefaultMustacheFactory();
             m = mf.compile("SlidingWindowContract.mustache");
         }
@@ -498,7 +500,8 @@ public class CodeGenerator {
 
         // get having expression
         Expression expression = selector.getHavingExpression();
-
+        
+        System.out.println(getFilterExpression(expression,"window"));
         //get orderBy list
         List<OrderByAttribute> orderByAttributeList = selector.getOrderByList();
 

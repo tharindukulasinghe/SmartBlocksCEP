@@ -27,6 +27,25 @@ public class SmartContract {
     private List<MaxForeverFunction> maxForeverFunctions = new ArrayList<>();
     private List<MinForeverFunction> minForeverFunctions = new ArrayList<>();
 
+    public boolean isHasHaving() {
+        return hasHaving;
+    }
+
+    public void setHasHaving(boolean hasHaving) {
+        this.hasHaving = hasHaving;
+    }
+
+    public boolean isHasNoHaving() {
+        return hasNoHaving;
+    }
+
+    public void setHasNoHaving(boolean hasNoHaving) {
+        this.hasNoHaving = hasNoHaving;
+    }
+
+    private boolean hasHaving;
+    private boolean hasNoHaving;
+
     public String getOutputStreamName() {
         return outputStreamName;
     }
