@@ -517,225 +517,241 @@ public class CodeGenerator {
     private void processOutputAttributeList(List<OutputAttribute> outputAttributeList) {
 
         List<StreamOutputAttribute> moderatedOutputAttributes = new ArrayList<>();
+        if(outputAttributeList.size()>0) {
+            for (OutputAttribute outputAttribute : outputAttributeList) {
+                Expression expression = outputAttribute.getExpression();
+                if (expression instanceof AttributeFunction) {
+                    List<WindowFunction> windowFunctionList = new ArrayList<>();
+                    StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
+                    AttributeFunction attributeFunction = (AttributeFunction) expression;
+                    String functionName = attributeFunction.getName();
 
-        for (OutputAttribute outputAttribute : outputAttributeList) {
+                    WindowFunction windowFunction = new WindowFunction();
+                    switch (functionName) {
+                        case "avg": {
+                            AverageFunction averageFunction = new AverageFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            averageFunction.setFunctionName(functionName + variable.getAttributeName());
+                            averageFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
 
-            Expression expression = outputAttribute.getExpression();
-            if (expression instanceof AttributeFunction) {
-                List<WindowFunction> windowFunctionList = new ArrayList<>();
-                StreamOutputAttribute streamAttribute = new StreamOutputAttribute();
-                AttributeFunction attributeFunction = (AttributeFunction) expression;
-                String functionName = attributeFunction.getName();
+                            List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                            List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                            for (StreamAttribute attribute : streamAttributeList) {
+                                if (attribute.getName().equals(variable.getAttributeName())) {
+                                    averageFunction.setType(attribute.getType());
+                                }
+                            }
+                            windowFunction.addAverageFunction(averageFunction);
+                            break;
+                        }
+                        case "sum": {
+                            SumFunction sumFunction = new SumFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            sumFunction.setFunctionName(functionName + variable.getAttributeName());
+                            sumFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
 
-                WindowFunction windowFunction = new WindowFunction();
-                switch (functionName) {
-                    case "avg": {
-                        AverageFunction averageFunction = new AverageFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        averageFunction.setFunctionName(functionName + variable.getAttributeName());
-                        averageFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
+                            List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                            List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                            for (StreamAttribute attribute : streamAttributeList) {
+                                if (attribute.getName().equals(variable.getAttributeName())) {
+                                    sumFunction.setType(attribute.getType());
+                                }
+                            }
 
+                            windowFunction.addSumFunction(sumFunction);
+                            break;
+                        }
+                        case "max": {
+                            MaxFunction maxFunction = new MaxFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            maxFunction.setFunctionName(functionName + variable.getAttributeName());
+                            maxFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+
+                            List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                            List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+
+                            for (StreamAttribute attribute : streamAttributeList) {
+                                if (attribute.getName().equals(variable.getAttributeName())) {
+                                    maxFunction.setType(attribute.getType());
+                                }
+                            }
+                            windowFunction.addMaxFunction(maxFunction);
+                            break;
+                        }
+                        case "min": {
+                            MinFunction minFunction = new MinFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            minFunction.setFunctionName(functionName + variable.getAttributeName());
+                            minFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+
+                            List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                            List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                            for (StreamAttribute attribute : streamAttributeList) {
+                                if (attribute.getName().equals(variable.getAttributeName())) {
+                                    minFunction.setType(attribute.getType());
+                                }
+                            }
+
+                            windowFunction.addMinFunction(minFunction);
+                            break;
+                        }
+                        case "count": {
+                            CountFunction countFunction = new CountFunction();
+                            Variable variable = (Variable) attributeFunction.getParameters()[0];
+                            countFunction.setFunctionName(functionName + variable.getAttributeName());
+                            countFunction.setMember(variable.getAttributeName());
+                            streamAttribute.setFunction(functionName + variable.getAttributeName());
+
+                            List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+                            List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
+                            for (StreamAttribute attribute : streamAttributeList) {
+                                if (attribute.getName().equals(variable.getAttributeName())) {
+                                    countFunction.setType(attribute.getType());
+                                }
+                            }
+                            windowFunction.addCountFunction(countFunction);
+                            break;
+                        }
+                    }
+                    windowFunctionList.add(windowFunction);
+                    solidityContract.setWindowFunctionList(windowFunctionList);
+
+                    Expression[] expressions = attributeFunction.getParameters();
+
+                    if (expressions[0] instanceof Variable) {
+                        Variable variable = (Variable) expressions[0];
+
+                        streamAttribute.setName(variable.getAttributeName());
+                        streamAttribute.setRename(outputAttribute.getRename());
+                        // System.out.println(variable);
                         List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+
                         List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
                         for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(variable.getAttributeName())) {
-                                averageFunction.setType(attribute.getType());
+                            //System.out.println();
+                            if (attribute.getName().equals(streamAttribute.getName())) {
+                                streamAttribute.setType(attribute.getType());
                             }
                         }
-                        windowFunction.addAverageFunction(averageFunction);
-                        break;
+                        moderatedOutputAttributes.add(streamAttribute);
                     }
-                    case "sum": {
-                        SumFunction sumFunction = new SumFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        sumFunction.setFunctionName(functionName + variable.getAttributeName());
-                        sumFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
 
-                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
-                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
-                        for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(variable.getAttributeName())) {
-                                sumFunction.setType(attribute.getType());
-                            }
-                        }
-
-                        windowFunction.addSumFunction(sumFunction);
-                        break;
-                    }
-                    case "max": {
-                        MaxFunction maxFunction = new MaxFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        maxFunction.setFunctionName(functionName + variable.getAttributeName());
-                        maxFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-
-                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
-                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
-
-                        for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(variable.getAttributeName())) {
-                                maxFunction.setType(attribute.getType());
-                            }
-                        }
-                        windowFunction.addMaxFunction(maxFunction);
-                        break;
-                    }
-                    case "min": {
-                        MinFunction minFunction = new MinFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        minFunction.setFunctionName(functionName + variable.getAttributeName());
-                        minFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-
-                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
-                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
-                        for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(variable.getAttributeName())) {
-                                minFunction.setType(attribute.getType());
-                            }
-                        }
-
-                        windowFunction.addMinFunction(minFunction);
-                        break;
-                    }
-                    case "count": {
-                        CountFunction countFunction = new CountFunction();
-                        Variable variable = (Variable) attributeFunction.getParameters()[0];
-                        countFunction.setFunctionName(functionName + variable.getAttributeName());
-                        countFunction.setMember(variable.getAttributeName());
-                        streamAttribute.setFunction(functionName + variable.getAttributeName());
-
-                        List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
-                        List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
-                        for (StreamAttribute attribute : streamAttributeList) {
-                            if (attribute.getName().equals(variable.getAttributeName())) {
-                                countFunction.setType(attribute.getType());
-                            }
-                        }
-                        windowFunction.addCountFunction(countFunction);
-                        break;
-                    }
-                }
-                windowFunctionList.add(windowFunction);
-                solidityContract.setWindowFunctionList(windowFunctionList);
-
-                Expression[] expressions = attributeFunction.getParameters();
-
-                if (expressions[0] instanceof Variable) {
-                    Variable variable = (Variable) expressions[0];
-
-                    streamAttribute.setName(variable.getAttributeName());
-                    streamAttribute.setRename(outputAttribute.getRename());
-                    // System.out.println(variable);
-                    List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
-
-                    List<StreamAttribute> streamAttributeList = inputStreamEventList.get(0).getStreamAttributeList();
-                    for (StreamAttribute attribute : streamAttributeList) {
-                        //System.out.println();
-                        if (attribute.getName().equals(streamAttribute.getName())) {
-                            streamAttribute.setType(attribute.getType());
-                        }
-                    }
-                    moderatedOutputAttributes.add(streamAttribute);
-                }
-
-            } else if (expression instanceof Variable) {
-                Variable variable = (Variable) expression;
-                moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
-                solidityContract.addSequenceOutPuts(processSequenceVariable(variable));
-            } else if (expression instanceof Subtract) {
-                Subtract subtract = (Subtract) expression;
-                Expression leftValue = subtract.getLeftValue();
-                Expression rightValue = subtract.getRightValue();
-
-                String subtractLeftExpression = "";
-                if (leftValue instanceof Variable) {
-                    Variable variable = (Variable) leftValue;
+                } else if (expression instanceof Variable) {
+                    Variable variable = (Variable) expression;
                     moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
-                    subtractLeftExpression = processSequenceVariable(variable);
-                }
-                String subtractRightExpression = "";
-                if (rightValue instanceof Variable) {
-                    Variable variable = (Variable) rightValue;
-                    subtractRightExpression = processSequenceVariable(variable);
+                    solidityContract.addSequenceOutPuts(processSequenceVariable(variable));
+                } else if (expression instanceof Subtract) {
+                    Subtract subtract = (Subtract) expression;
+                    Expression leftValue = subtract.getLeftValue();
+                    Expression rightValue = subtract.getRightValue();
 
-                }
-                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " - " + subtractRightExpression + ")");
-            } else if (expression instanceof Add) {
-                Add add = (Add) expression;
-                Expression leftValue = add.getLeftValue();
-                Expression rightValue = add.getRightValue();
+                    String subtractLeftExpression = "";
+                    if (leftValue instanceof Variable) {
+                        Variable variable = (Variable) leftValue;
+                        moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                        subtractLeftExpression = processSequenceVariable(variable);
+                    }
+                    String subtractRightExpression = "";
+                    if (rightValue instanceof Variable) {
+                        Variable variable = (Variable) rightValue;
+                        subtractRightExpression = processSequenceVariable(variable);
 
-                String subtractLeftExpression = "";
-                if (leftValue instanceof Variable) {
-                    Variable variable = (Variable) leftValue;
-                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                    }
+                    solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " - " + subtractRightExpression + ")");
+                } else if (expression instanceof Add) {
+                    Add add = (Add) expression;
+                    Expression leftValue = add.getLeftValue();
+                    Expression rightValue = add.getRightValue();
 
-                    subtractLeftExpression = processSequenceVariable(variable);
-                }
-                String subtractRightExpression = "";
-                if (rightValue instanceof Variable) {
-                    Variable variable = (Variable) rightValue;
-                    subtractRightExpression = processSequenceVariable(variable);
-                }
-                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " + " + subtractRightExpression + ")");
-            }else if (expression instanceof Multiply) {
-                Multiply multiply = (Multiply) expression;
-                Expression leftValue = multiply.getLeftValue();
-                Expression rightValue = multiply.getRightValue();
+                    String subtractLeftExpression = "";
+                    if (leftValue instanceof Variable) {
+                        Variable variable = (Variable) leftValue;
+                        moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
 
-                String subtractLeftExpression = "";
-                if (leftValue instanceof Variable) {
-                    Variable variable = (Variable) leftValue;
-                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
-                    subtractLeftExpression = processSequenceVariable(variable);
-                }
-                String subtractRightExpression = "";
-                if (rightValue instanceof Variable) {
-                    Variable variable = (Variable) rightValue;
-                    subtractRightExpression = processSequenceVariable(variable);
-                }
-                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " * " + subtractRightExpression + ")");
-            }else if (expression instanceof Divide) {
-                Divide divide = (Divide) expression;
-                Expression leftValue = divide.getLeftValue();
-                Expression rightValue = divide.getRightValue();
+                        subtractLeftExpression = processSequenceVariable(variable);
+                    }
+                    String subtractRightExpression = "";
+                    if (rightValue instanceof Variable) {
+                        Variable variable = (Variable) rightValue;
+                        subtractRightExpression = processSequenceVariable(variable);
+                    }
+                    solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " + " + subtractRightExpression + ")");
+                } else if (expression instanceof Multiply) {
+                    Multiply multiply = (Multiply) expression;
+                    Expression leftValue = multiply.getLeftValue();
+                    Expression rightValue = multiply.getRightValue();
 
-                String subtractLeftExpression = "";
-                if (leftValue instanceof Variable) {
-                    Variable variable = (Variable) leftValue;
-                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
-                    subtractLeftExpression = processSequenceVariable(variable);
-                }
-                String subtractRightExpression = "";
-                if (rightValue instanceof Variable) {
-                    Variable variable = (Variable) rightValue;
-                    subtractRightExpression = processSequenceVariable(variable);
-                }
-                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " / " + subtractRightExpression + ")");
-            }else if (expression instanceof Mod) {
-                Mod mod = (Mod) expression;
-                Expression leftValue = mod.getLeftValue();
-                Expression rightValue = mod.getRightValue();
+                    String subtractLeftExpression = "";
+                    if (leftValue instanceof Variable) {
+                        Variable variable = (Variable) leftValue;
+                        moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                        subtractLeftExpression = processSequenceVariable(variable);
+                    }
+                    String subtractRightExpression = "";
+                    if (rightValue instanceof Variable) {
+                        Variable variable = (Variable) rightValue;
+                        subtractRightExpression = processSequenceVariable(variable);
+                    }
+                    solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " * " + subtractRightExpression + ")");
+                } else if (expression instanceof Divide) {
+                    Divide divide = (Divide) expression;
+                    Expression leftValue = divide.getLeftValue();
+                    Expression rightValue = divide.getRightValue();
 
-                String subtractLeftExpression = "";
-                if (leftValue instanceof Variable) {
-                    Variable variable = (Variable) leftValue;
-                    moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
-                    subtractLeftExpression = processSequenceVariable(variable);
+                    String subtractLeftExpression = "";
+                    if (leftValue instanceof Variable) {
+                        Variable variable = (Variable) leftValue;
+                        moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                        subtractLeftExpression = processSequenceVariable(variable);
+                    }
+                    String subtractRightExpression = "";
+                    if (rightValue instanceof Variable) {
+                        Variable variable = (Variable) rightValue;
+                        subtractRightExpression = processSequenceVariable(variable);
+                    }
+                    solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " / " + subtractRightExpression + ")");
+                } else if (expression instanceof Mod) {
+                    Mod mod = (Mod) expression;
+                    Expression leftValue = mod.getLeftValue();
+                    Expression rightValue = mod.getRightValue();
+
+                    String subtractLeftExpression = "";
+                    if (leftValue instanceof Variable) {
+                        Variable variable = (Variable) leftValue;
+                        moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
+                        subtractLeftExpression = processSequenceVariable(variable);
+                    }
+                    String subtractRightExpression = "";
+                    if (rightValue instanceof Variable) {
+                        Variable variable = (Variable) rightValue;
+                        subtractRightExpression = processSequenceVariable(variable);
+                    }
+                    solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " % " + subtractRightExpression + ")");
                 }
-                String subtractRightExpression = "";
-                if (rightValue instanceof Variable) {
-                    Variable variable = (Variable) rightValue;
-                    subtractRightExpression = processSequenceVariable(variable);
-                }
-                solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " % " + subtractRightExpression + ")");
             }
-        }
+        }else{
+            List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
+            for (InputStreamEvent inputStreamEvent : inputStreamEventList) {
+                for (StreamAttribute attribute : inputStreamEvent.getStreamAttributeList()) {
+                    StreamOutputAttribute streamOutputAttribute = new StreamOutputAttribute();
+                    streamOutputAttribute.setName(attribute.getName());
+                    streamOutputAttribute.setRename(attribute.getName());
+                    if (attribute.getName().equals(streamOutputAttribute.getName())) {
+                        streamOutputAttribute.setType(attribute.getType());
+                    }
+                    moderatedOutputAttributes.add(streamOutputAttribute);
+                }
 
-        moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
+            }
+
+        }
+        if(moderatedOutputAttributes.size()>0) {
+            moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
+        }
         this.solidityContract.setStreamOutputAttributeList(moderatedOutputAttributes);
     }
 
