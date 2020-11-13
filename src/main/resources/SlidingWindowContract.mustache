@@ -45,12 +45,13 @@ contract {{name}} {
     function check() private {
         if(index == {{windowLength}}){
             processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
-            {{#outAttributes}}
-                {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
-            {{/outAttributes}}
+            {{#streamOutputAttributeList}}
+                {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
+            {{/streamOutputAttributeList}}
             }));
         }
     }
+
 {{#windowFunctionList}}
     {{#averageFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
@@ -61,8 +62,8 @@ contract {{name}} {
         {{type}} avg = sum / (index);
         return avg;
     }
-    {{/averageFunctions}}
 
+    {{/averageFunctions}}
 {{#sumFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
         {{type}} sum = 0;
@@ -71,8 +72,8 @@ contract {{name}} {
         }
         return sum;
     }
-{{/sumFunctions}}
 
+{{/sumFunctions}}
 {{#maxFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
         {{type}} max = window[0].{{member}};
@@ -83,8 +84,8 @@ contract {{name}} {
         }
         return max;
     }
-{{/maxFunctions}}
 
+{{/maxFunctions}}
 {{#minFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
         {{type}} min = window[0].{{member}};
@@ -95,13 +96,14 @@ contract {{name}} {
         }
         return min;
     }
-{{/minFunctions}}
 
+{{/minFunctions}}
 {{#countFunctions}}
     function {{functionName}}() private view returns ({{type}}) {
         {{type}} count = window.length;
         return count;
     }
+
 {{/countFunctions}}
 {{/windowFunctionList}}
 }

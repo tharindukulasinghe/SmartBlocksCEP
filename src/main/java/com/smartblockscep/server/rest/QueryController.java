@@ -13,7 +13,7 @@ public class QueryController {
 
     @CrossOrigin
     @PostMapping("/query")
-    public ActionResult requestQuery(@RequestBody BaseQuery query) {
+    public String requestQuery(@RequestBody BaseQuery query) {
 
         NewQueryHandler queryHandler = new NewQueryHandler();
 
@@ -21,10 +21,10 @@ public class QueryController {
 
         String out = queryHandler.computeWindow(siddhiApp);
 
-        ActionResult result = new ActionResult(out);
+        //ActionResult result = new ActionResult(out);
 
         //return new Response(false, out);
-        return result;
+        return out;
     }
 
 }

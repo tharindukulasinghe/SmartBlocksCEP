@@ -37,8 +37,6 @@ public class CodeGenerator {
     SolidityContract solidityContract = new SolidityContract();
 
     public String processOutput(SiddhiApp siddhiApp) {
-       // System.out.println(siddhiApp);
-
         // process stream definition
         Map<String, StreamDefinition> streamDefinitionMap = siddhiApp.getStreamDefinitionMap();
         processStreamDefinition(streamDefinitionMap);
@@ -52,8 +50,6 @@ public class CodeGenerator {
                 // handle input stream
                 InputStream inputStream = query.getInputStream();
                 processInputStream(inputStream);
-                System.out.println(query);
-
 
                 // handle selector
                 Selector selector = query.getSelector();
@@ -132,7 +128,6 @@ public class CodeGenerator {
     }
 
     private void processInputStream(InputStream inputStream) {
-        // System.out.println(inputStream);
         if (inputStream instanceof JoinInputStream) {
             //System.out.println(inputStream);
             InputStream leftInputStream = ((JoinInputStream) inputStream).getLeftInputStream();
@@ -180,13 +175,13 @@ public class CodeGenerator {
 
                 StateElement stateElement = stateInputStream.getStateElement();
                 TimeConstant timeConstant = stateInputStream.getWithinTime();
-
+                System.out.println(stateInputStream.getWithinTime());
                 SequenceExpression sequenceExpression = new SequenceExpression();
                 solidityContract.addSequenceExpression(sequenceExpression);
                 processStateElement(stateElement, sequenceExpression);
 
             } else if (type.equals(StateInputStream.Type.SEQUENCE)) {
-                // System.out.println(stateInputStream.getWithinTime());
+                 System.out.println(stateInputStream.getWithinTime());
                 SequenceExpression sequenceExpression = new SequenceExpression();
                 solidityContract.addSequenceExpression(sequenceExpression);
                 StateElement stateElement = stateInputStream.getStateElement();
@@ -500,16 +495,23 @@ public class CodeGenerator {
 
         // get having expression
         Expression expression = selector.getHavingExpression();
-        
-        System.out.println(getFilterExpression(expression,"window"));
+
+        //System.out.println(getFilterExpression(expression,"window"));
         //get orderBy list
         List<OrderByAttribute> orderByAttributeList = selector.getOrderByList();
 
         // get limit
         Constant limit = selector.getLimit();
+        //System.out.println(limit);
+        if(limit instanceof IntConstant){
+            Integer integer= ((IntConstant) limit).getValue();
+        }else if(limit instanceof LongConstant){
+            Long longConstant= ((LongConstant) limit).getValue();
+        }
 
         // get offset
         Constant offset = selector.getOffset();
+        //System.out.println(offset);
     }
 
     private void processOutputAttributeList(List<OutputAttribute> outputAttributeList) {
@@ -737,7 +739,6 @@ public class CodeGenerator {
         this.solidityContract.setStreamOutputAttributeList(moderatedOutputAttributes);
     }
 
-
     public String processSequenceVariable(Variable variable) {
         String output = "";
         String streamId = variable.getStreamId();
@@ -803,6 +804,7 @@ public class CodeGenerator {
         }
         return streamOutputAttribute;
     }
+
 
     public String getAttributeType(Attribute.Type type) {
         if (type == Attribute.Type.INT) {
