@@ -41,9 +41,9 @@ import java.util.Map;
 public class NewQueryHandler {
     SmartContract smartContract = new SmartContract();
 
-    public static SiddhiApp parseMe(String query) {
+    public static SiddhiApp parseMe(BaseQuery query) {
 
-        CharStream input = CharStreams.fromString(query);
+        CharStream input = CharStreams.fromString(query.getQuery());
         SiddhiQLLexer lexer = new SiddhiQLLexer(input);
         lexer.removeErrorListeners();
 
@@ -58,7 +58,7 @@ public class NewQueryHandler {
         return (SiddhiApp) eval.visit(tree);
     }
 
-    public String computeWindow(SiddhiApp siddhiApp) {
+    public String computeWindow(SiddhiApp siddhiApp, int precision) {
         //setStreamDefinition(siddhiApp);
         //setExpression(siddhiApp);
 //
@@ -86,7 +86,7 @@ public class NewQueryHandler {
 //        return output;
 
         CodeGenerator codeGenerator = new CodeGenerator();
-        return codeGenerator.processOutput(siddhiApp);
+        return codeGenerator.processOutput(siddhiApp, precision);
     }
 
 

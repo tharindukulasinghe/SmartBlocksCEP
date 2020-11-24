@@ -36,7 +36,7 @@ public class CodeGenerator {
 
     SolidityContract solidityContract = new SolidityContract();
 
-    public String processOutput(SiddhiApp siddhiApp) {
+    public String processOutput(SiddhiApp siddhiApp, int precision) {
        // System.out.println(siddhiApp);
 
         // process stream definition

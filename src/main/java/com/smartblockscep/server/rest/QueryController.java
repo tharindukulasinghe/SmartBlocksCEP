@@ -17,9 +17,9 @@ public class QueryController {
 
         NewQueryHandler queryHandler = new NewQueryHandler();
 
-        SiddhiApp siddhiApp = NewQueryHandler.parseMe(query.getQuery());
+        SiddhiApp siddhiApp = NewQueryHandler.parseMe(query);
 
-        String out = queryHandler.computeWindow(siddhiApp);
+        String out = queryHandler.computeWindow(siddhiApp, query.getPrecision());
 
         ActionResult result = new ActionResult(out);
 
