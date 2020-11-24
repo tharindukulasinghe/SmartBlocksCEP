@@ -54,9 +54,9 @@ contract {{name}} {
     function check() private {
         if(index == 5){
             processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
-            {{#outAttributes}}
-                {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
-            {{/outAttributes}}
+            {{#streamOutputAttributeList}}
+                {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
+            {{/streamOutputAttributeList}}
         }));
         }
     }

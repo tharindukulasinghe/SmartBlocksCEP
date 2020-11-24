@@ -21,6 +21,8 @@ public class SolidityContract {
     private List<InitialInputStream> inputStreamNames=new ArrayList<>();
     private List<String> sequenceOutPuts=new ArrayList<>();
     private QueryType queryType;
+    private String limit;
+    private String offset;
 
     public List<InputStreamEvent> getInputStreamEventList() {
         return inputStreamEventList;
@@ -138,5 +140,21 @@ public class SolidityContract {
 
     public void setQueryType(QueryType queryType) {
         this.queryType = queryType;
+    }
+
+    public String getLimit() {
+        return limit;
+    }
+
+    public void setLimit(String limit) {
+        this.limit = limit;
+    }
+
+    public String getOffset() {
+        return offset;
+    }
+
+    public void setOffset(String offset) {
+        this.offset = offset;
     }
 }
