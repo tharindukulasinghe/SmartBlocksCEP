@@ -3,13 +3,21 @@ pragma experimental ABIEncoderV2;
 
 contract {{name}} {
 
-{{#inputStreamEventList}}
-    struct {{inputStreamName}}Event {
-    {{#streamAttributeList}}
-        {{type}} {{name}};
-{{/streamAttributeList}}
-    }
-{{/inputStreamEventList}}
+    uint8 private precisionFactor = {{precision}};
+
+    {{#inputStreamEventList}}
+        struct {{inputStreamName}}Event {
+        {{#streamAttributeList}}
+            {{type}} {{name}};
+        {{/streamAttributeList}}
+        }
+
+        struct {{inputStreamName}}EventDTO {
+        {{#streamAttributeList}}
+            string {{name}};
+        {{/streamAttributeList}}
+        }
+    {{/inputStreamEventList}}
 
     struct {{outputStreamName}}Event {
     {{#streamOutputAttributeList}}
@@ -20,11 +28,20 @@ contract {{name}} {
     {{outputStreamName}}Event[] public {{outputStreamName}}Events;
 
 {{#filterExpressionList}}
-    function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public{
+    function process({{inputStreamName}}EventDTO memory incoming{{inputStreamName}}EventDTO) public{
+
+        {{inputStreamName}}Event memory incoming{{inputStreamName}}Event = {{inputStreamName}}Event({
+    {{#inputStreamEventList}}
+            {{#streamAttributeList}}
+                {{name}} : {{#isParsed}}parseInt{{name}}({{/isParsed}}incoming{{inputStreamName}}EventDTO.{{name}}{{#isParsed}}){{/isParsed}}{{#notLastItem}},{{/notLastItem}}
+            {{/streamAttributeList}}
+        });
+    {{/inputStreamEventList}}
+
         if {{{expression}}}{
             {{outputStreamName}}Events.push({{outputStreamName}}Event({
                 {{#streamOutputAttributeList}}
-                {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
+                {{rename}}: {{#parseInt}}parseInt{{name}}({{/parseInt}}incoming{{inputStreamName}}Event.{{name}}{{#parseInt}}){{/parseInt}} {{#notLastItem}},{{/notLastItem}}
                 {{/streamOutputAttributeList}}
             }));
         }
@@ -132,4 +149,19 @@ contract {{name}} {
     }
  {{/countFunctions}}
 {{/windowFunctionList}}
+
+{{#parseIntFunctions}}
+    function {{functionName}}(string memory s) private view returns ({{type}}) {
+        bytes memory b = bytes(s);
+        {{type}} result = 0;
+        for (uint i = 0; i < b.length; i++) {
+            if (b[i] >= 48 && b[i] <= 57) {
+                result = result * 10 + (uint(b[i]) - 48);
+            }
+        }
+        return result * precisionFactor;
+    }
+{{/parseIntFunctions}}
+
+
 }

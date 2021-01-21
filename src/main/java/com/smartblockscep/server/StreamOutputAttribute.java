@@ -7,6 +7,9 @@ public class StreamOutputAttribute {
     private String type = "";
     private String function;
     private boolean notLastItem = true;
+    private boolean hasPrecision;
+    private boolean parseInt;
+    private int precision;
 
     public String getRename() {
         return rename;
@@ -46,5 +49,29 @@ public class StreamOutputAttribute {
 
     public void setNotLastItem(boolean notLastItem) {
         this.notLastItem = notLastItem;
+    }
+
+    public int getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(int precision) {
+        this.precision = precision;
+    }
+
+    public boolean isHasPrecision() {
+        return hasPrecision;
+    }
+
+    public void setHasPrecision(boolean hasPrecision) {
+        this.hasPrecision = hasPrecision;
+    }
+
+    public boolean isParseInt() {
+        return parseInt;
+    }
+
+    public void setParseInt(boolean parseInt) {
+        this.parseInt = parseInt;
     }
 }

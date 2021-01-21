@@ -1,6 +1,7 @@
 package com.smartblockscep.server.test;
 
 import com.smartblockscep.server.InputStreamEvent;
+import com.smartblockscep.server.ParseIntFunction;
 import com.smartblockscep.server.QueryType;
 import com.smartblockscep.server.StreamOutputAttribute;
 
@@ -17,16 +18,31 @@ public class SolidityContract {
     private List<WindowExpression> windowExpressionList = new ArrayList<>();
     private List<PatternExpression> patternExpressionList = new ArrayList<>();
     private List<SequenceExpression> sequenceExpressionList = new ArrayList<>();
+
+
+    private List<ParseIntFunction> parseIntFunctions = new ArrayList<>();
     //todo find a better way
     private List<InitialInputStream> inputStreamNames=new ArrayList<>();
     private List<String> sequenceOutPuts=new ArrayList<>();
     private QueryType queryType;
     private String limit;
     private String offset;
+    private double precision;
+
+    public double getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(double precision) {
+        this.precision = precision;
+    }
+
+
 
     public List<InputStreamEvent> getInputStreamEventList() {
         return inputStreamEventList;
     }
+
 
     public void setInputStreamEventList(List<InputStreamEvent> inputStreamEventList) {
         this.inputStreamEventList = inputStreamEventList;
@@ -156,5 +172,17 @@ public class SolidityContract {
 
     public void setOffset(String offset) {
         this.offset = offset;
+    }
+
+    public List<ParseIntFunction> getParseIntFunctions() {
+        return parseIntFunctions;
+    }
+
+    public void setParseIntFunctions(List<ParseIntFunction> parseIntFunctions) {
+        this.parseIntFunctions = parseIntFunctions;
+    }
+
+    public void addParseIntFunction(ParseIntFunction parseIntFunction){
+        this.parseIntFunctions.add(parseIntFunction);
     }
 }

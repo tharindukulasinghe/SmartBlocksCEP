@@ -35,12 +35,14 @@ import java.util.Map;
 public class CodeGenerator {
 
     SolidityContract solidityContract = new SolidityContract();
+    private int precision;
 
-    public String processOutput(SiddhiApp siddhiApp) {
+    public String processOutput(SiddhiApp siddhiApp, int precision) {
         // process stream definition
         Map<String, StreamDefinition> streamDefinitionMap = siddhiApp.getStreamDefinitionMap();
         processStreamDefinition(streamDefinitionMap);
-
+        this.precision = precision;
+        this.solidityContract.setPrecision(getPrecisionFactor(this.precision));
         //process execution element list
         List<ExecutionElement> executionElementList = siddhiApp.getExecutionElementList();
         for (ExecutionElement executionElement : executionElementList) {
@@ -84,7 +86,7 @@ public class CodeGenerator {
             m.execute(writer, solidityContract).flush();
             output = writer.toString();
         } catch (Exception e) {
-
+            System.out.println(e.getStackTrace());
         }
         return output;
     }
@@ -106,11 +108,20 @@ public class CodeGenerator {
 
             List<Attribute> attributeList = streamDefinition.getAttributeList();
             List<StreamAttribute> moderatedInputAttributes = new ArrayList<>();
+            List<ParseIntFunction> parseIntFunctions = new ArrayList<>();
 
             for (Attribute attribute : attributeList) {
                 StreamAttribute streamAttribute = new StreamAttribute();
                 streamAttribute.setName(attribute.getName());
                 streamAttribute.setType(getAttributeType(attribute.getType()));
+                if(attribute.getType() == Attribute.Type.INT || attribute.getType() == Attribute.Type.INT8 || attribute.getType() == Attribute.Type.INT256 || attribute.getType() == Attribute.Type.LONG){
+                    streamAttribute.setParsed(true);
+                    streamAttribute.setFunctionName("parseInt"+streamAttribute.getName());
+                    ParseIntFunction parseIntFunction = new ParseIntFunction();
+                    parseIntFunction.setFunctionName("parseInt"+streamAttribute.getName());
+                    parseIntFunction.setType(streamAttribute.getType());
+                    parseIntFunctions.add(parseIntFunction);
+                }
 
                 moderatedInputAttributes.add(streamAttribute);
 
@@ -118,8 +129,14 @@ public class CodeGenerator {
                 // streamAttributeList.add(streamAttribute);
             }
 
+            if(moderatedInputAttributes.size()>0) {
+                moderatedInputAttributes.get(moderatedInputAttributes.size() - 1).setNotLastItem(false);
+
+            }
+
             inputStreamEvent.setStreamAttributeList(moderatedInputAttributes);
             inputStreamEventList.add(inputStreamEvent);
+            solidityContract.setParseIntFunctions(parseIntFunctions);
         }
         // todo implement a better way to get output attribute types
         // smartContract.setAttributes(streamAttributeList);
@@ -139,7 +156,8 @@ public class CodeGenerator {
             // System.out.println(rightInputStream);
             // todo implement logic for join input stream
 
-        } else if (inputStream instanceof SingleInputStream) {
+        }
+        else if (inputStream instanceof SingleInputStream) {
             SingleInputStream singleInputStream = (SingleInputStream) inputStream;
 
             List<StreamHandler> streamHandlerList = singleInputStream.getStreamHandlers();
@@ -165,7 +183,8 @@ public class CodeGenerator {
                 }
             }
 
-        } else if (inputStream instanceof StateInputStream) {
+        }
+        else if (inputStream instanceof StateInputStream) {
 
             StateInputStream stateInputStream = (StateInputStream) inputStream;
             StateInputStream.Type type = stateInputStream.getStateType();
@@ -640,11 +659,13 @@ public class CodeGenerator {
                         moderatedOutputAttributes.add(streamAttribute);
                     }
 
-                } else if (expression instanceof Variable) {
+                }
+                else if (expression instanceof Variable) {
                     Variable variable = (Variable) expression;
                     moderatedOutputAttributes.add(processVariable(variable, outputAttribute));
                     solidityContract.addSequenceOutPuts(processSequenceVariable(variable));
-                } else if (expression instanceof Subtract) {
+                }
+                else if (expression instanceof Subtract) {
                     Subtract subtract = (Subtract) expression;
                     Expression leftValue = subtract.getLeftValue();
                     Expression rightValue = subtract.getRightValue();
@@ -662,7 +683,8 @@ public class CodeGenerator {
 
                     }
                     solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " - " + subtractRightExpression + ")");
-                } else if (expression instanceof Add) {
+                }
+                else if (expression instanceof Add) {
                     Add add = (Add) expression;
                     Expression leftValue = add.getLeftValue();
                     Expression rightValue = add.getRightValue();
@@ -680,7 +702,8 @@ public class CodeGenerator {
                         subtractRightExpression = processSequenceVariable(variable);
                     }
                     solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " + " + subtractRightExpression + ")");
-                } else if (expression instanceof Multiply) {
+                }
+                else if (expression instanceof Multiply) {
                     Multiply multiply = (Multiply) expression;
                     Expression leftValue = multiply.getLeftValue();
                     Expression rightValue = multiply.getRightValue();
@@ -697,7 +720,8 @@ public class CodeGenerator {
                         subtractRightExpression = processSequenceVariable(variable);
                     }
                     solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " * " + subtractRightExpression + ")");
-                } else if (expression instanceof Divide) {
+                }
+                else if (expression instanceof Divide) {
                     Divide divide = (Divide) expression;
                     Expression leftValue = divide.getLeftValue();
                     Expression rightValue = divide.getRightValue();
@@ -714,7 +738,8 @@ public class CodeGenerator {
                         subtractRightExpression = processSequenceVariable(variable);
                     }
                     solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " / " + subtractRightExpression + ")");
-                } else if (expression instanceof Mod) {
+                }
+                else if (expression instanceof Mod) {
                     Mod mod = (Mod) expression;
                     Expression leftValue = mod.getLeftValue();
                     Expression rightValue = mod.getRightValue();
@@ -733,7 +758,8 @@ public class CodeGenerator {
                     solidityContract.addSequenceOutPuts(outputAttribute.getRename() + ":" + "(" + subtractLeftExpression + " % " + subtractRightExpression + ")");
                 }
             }
-        }else{
+        }
+        else {
             List<InputStreamEvent> inputStreamEventList = solidityContract.getInputStreamEventList();
             for (InputStreamEvent inputStreamEvent : inputStreamEventList) {
                 for (StreamAttribute attribute : inputStreamEvent.getStreamAttributeList()) {
@@ -751,6 +777,7 @@ public class CodeGenerator {
         }
         if(moderatedOutputAttributes.size()>0) {
             moderatedOutputAttributes.get(moderatedOutputAttributes.size() - 1).setNotLastItem(false);
+
         }
         this.solidityContract.setStreamOutputAttributeList(moderatedOutputAttributes);
     }
@@ -814,6 +841,14 @@ public class CodeGenerator {
                 for (StreamAttribute attribute : inputStreamEvent.getStreamAttributeList()) {
                     if (attribute.getName().equals(streamOutputAttribute.getName())) {
                         streamOutputAttribute.setType(attribute.getType());
+                        if(attribute.getType().contains("int")){
+                            streamOutputAttribute.setHasPrecision(true);
+                            streamOutputAttribute.setPrecision(this.precision);
+                            streamOutputAttribute.setParseInt(true);
+                        }
+                        else {
+                            streamOutputAttribute.setHasPrecision(false);
+                        }
                     }
                 }
             }
@@ -824,17 +859,17 @@ public class CodeGenerator {
 
     public String getAttributeType(Attribute.Type type) {
         if (type == Attribute.Type.INT) {
-            return "uint8";
-        } else if (type == Attribute.Type.INT8) {
-            return "uint8";
-        } else if (type == Attribute.Type.INT16) {
             return "uint16";
-        } else if (type == Attribute.Type.INT32) {
+        } else if (type == Attribute.Type.INT8) {
+            return "uint16";
+        } else if (type == Attribute.Type.INT16) {
             return "uint32";
-        } else if (type == Attribute.Type.INT64) {
+        } else if (type == Attribute.Type.INT32) {
             return "uint64";
-        } else if (type == Attribute.Type.INT128) {
+        } else if (type == Attribute.Type.INT64) {
             return "uint128";
+        } else if (type == Attribute.Type.INT128) {
+            return "uint256";
         } else if (type == Attribute.Type.INT256) {
             return "uint256";
         } else if (type == Attribute.Type.LONG) {
@@ -973,5 +1008,14 @@ public class CodeGenerator {
             }
         }
         solidityContract.setWindowExpressionList(windowExpressionList);
+    }
+
+    private double getPrecisionFactor(int precision){
+        if(precision == 0){
+            return 1;
+        }
+        else {
+            return Math.pow(10,precision);
+        }
     }
 }
