@@ -29,6 +29,16 @@ public class SolidityContract {
     private String offset;
     private double precision;
 
+    public int getWindowLength() {
+        return windowLength;
+    }
+
+    public void setWindowLength(int windowLength) {
+        this.windowLength = windowLength;
+    }
+
+    private int windowLength;
+
     public double getPrecision() {
         return precision;
     }

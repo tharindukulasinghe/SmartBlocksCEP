@@ -439,19 +439,19 @@ public class CodeGenerator {
 
         } else if (expression instanceof DoubleConstant) {
             DoubleConstant doubleExpression = (DoubleConstant) expression;
-            return "" + doubleExpression.getValue();
+            return "" + doubleExpression.getValue() * precision;
 
         } else if (expression instanceof FloatConstant) {
             FloatConstant constant = (FloatConstant) expression;
-            return "" + constant.getValue();
+            return "" + constant.getValue() * precision;
 
         } else if (expression instanceof IntConstant) {
             IntConstant constant = (IntConstant) expression;
-            return "" + constant.getValue();
+            return "" + constant.getValue() * precision;
 
         } else if (expression instanceof LongConstant) {
             LongConstant constant = (LongConstant) expression;
-            return "" + constant.getValue();
+            return "" + constant.getValue() * precision;
 
         } else if (expression instanceof StringConstant) {
             StringConstant constant = (StringConstant) expression;
@@ -932,7 +932,7 @@ public class CodeGenerator {
 
         } else if (expression instanceof IntConstant) {
             IntConstant constant = (IntConstant) expression;
-            return "" + constant.getValue();
+            return "" + constant.getValue() * getPrecisionFactorInt(precision);
 
         } else if (expression instanceof LongConstant) {
             LongConstant constant = (LongConstant) expression;
@@ -994,6 +994,7 @@ public class CodeGenerator {
 
     public void processWindow(Window window, String streamId) {
         Expression[] expressions = window.getParameters();
+
         List<WindowExpression> windowExpressionList = new ArrayList<>();
         for (Expression expression : expressions) {
             WindowExpression windowExpression = new WindowExpression();
@@ -1005,6 +1006,7 @@ public class CodeGenerator {
                 windowExpression.setLength(windowSize);
                 windowExpression.setInputStreamName(streamId);
                 windowExpressionList.add(windowExpression);
+                solidityContract.setWindowLength(windowSize);
             }
         }
         solidityContract.setWindowExpressionList(windowExpressionList);
@@ -1017,5 +1019,23 @@ public class CodeGenerator {
         else {
             return Math.pow(10,precision);
         }
+    }
+
+    private int getPrecisionFactorInt(int precision){
+        if(precision == 0){
+            return 1;
+        }
+        else {
+            return (int) Math.pow(10,precision);
+        }
+    }
+
+    public int getWindowExpression(Expression expression) {
+        int windowSize = 0;
+        if (expression instanceof IntConstant) {
+            IntConstant intConstant = (IntConstant) expression;
+            windowSize = intConstant.getValue();
+        }
+        return windowSize;
     }
 }

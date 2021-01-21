@@ -5,6 +5,7 @@ contract {{name}} {
 
     {{inputStreamName}}Event[{{windowLength}}] public window;
     uint256 public index;
+    uint8 private precisionFactor = {{precision}};
 
     struct {{inputStreamName}}Event {
     {{#attributes}}

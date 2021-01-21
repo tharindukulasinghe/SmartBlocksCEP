@@ -41,7 +41,7 @@ contract {{name}} {
         if {{{expression}}}{
             {{outputStreamName}}Events.push({{outputStreamName}}Event({
                 {{#streamOutputAttributeList}}
-                {{rename}}: {{#parseInt}}parseInt{{name}}({{/parseInt}}incoming{{inputStreamName}}Event.{{name}}{{#parseInt}}){{/parseInt}} {{#notLastItem}},{{/notLastItem}}
+                {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
                 {{/streamOutputAttributeList}}
             }));
         }
@@ -155,8 +155,8 @@ contract {{name}} {
         bytes memory b = bytes(s);
         {{type}} result = 0;
         for (uint i = 0; i < b.length; i++) {
-            if (b[i] >= 48 && b[i] <= 57) {
-                result = result * 10 + (uint(b[i]) - 48);
+            if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
+                result = result * 10 + (uint8(b[i]) - 48);
             }
         }
         return result * precisionFactor;
