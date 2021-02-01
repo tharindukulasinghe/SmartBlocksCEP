@@ -54,7 +54,7 @@ contract {{name}} {
         check();
     }
 
-    function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public {
+    function process({{inputStreamName}}EventDTO memory incoming{{inputStreamName}}Event) public {
         set(incoming{{inputStreamName}}Event);
     }
 {{/inputStreamEventList}}
@@ -62,7 +62,7 @@ contract {{name}} {
         if(index == {{windowLength}}){
             processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
             {{#streamOutputAttributeList}}
-                {{rename}}: incoming{{inputStreamName}}Event.{{name}}{{#notLastItem}},{{/notLastItem}}
+                {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
             {{/streamOutputAttributeList}}
             }));
         }

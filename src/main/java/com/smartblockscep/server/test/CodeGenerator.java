@@ -64,7 +64,7 @@ public class CodeGenerator {
         }
 
         Mustache m;
-
+        System.out.println(solidityContract.getQueryType());
         if(solidityContract.getQueryType() == QueryType.SlidingWindow){
             MustacheFactory mf = new DefaultMustacheFactory();
             m = mf.compile("SlidingWindowContract.mustache");
