@@ -1,0 +1,138 @@
+pragma solidity >=0.4.22 <0.7.0;
+pragma experimental ABIEncoderV2;
+
+contract {{name}} {
+
+{{#inputStreamEventList}}
+    {{inputStreamName}}Event[{{windowLength}}] public window;
+{{/inputStreamEventList}}
+    uint256 public index = 0;
+    uint8 private precisionFactor = {{precision}};
+
+{{#inputStreamEventList}}
+    struct {{inputStreamName}}Event {
+    {{#streamAttributeList}}
+        {{type}} {{name}};
+    {{/streamAttributeList}}
+    }
+
+    struct {{inputStreamName}}EventDTO {
+    {{#streamAttributeList}}
+        string {{name}};
+    {{/streamAttributeList}}
+    }
+{{/inputStreamEventList}}
+
+struct {{outputStreamName}}Event {
+{{#streamOutputAttributeList}}
+    {{type}} {{rename}};
+{{/streamOutputAttributeList}}
+}
+
+{{ outputStreamName}}Event[] public processed{{outputStreamName}}Events;
+
+{{#inputStreamEventList}}
+    function set({{inputStreamName}}EventDTO memory incoming{{inputStreamName}}EventDTO) private {
+
+    {{inputStreamName}}Event memory incoming{{inputStreamName}}Event = {{inputStreamName}}Event({
+    {{#inputStreamEventList}}
+        {{#streamAttributeList}}
+            {{name}} : {{#isParsed}}parseInt{{name}}({{/isParsed}}incoming{{inputStreamName}}EventDTO.{{name}}{{#isParsed}}){{/isParsed}}{{#notLastItem}},{{/notLastItem}}
+        {{/streamAttributeList}}
+        });
+    {{/inputStreamEventList}}
+
+        if(index == window.length) {
+            check();
+            window[0] = incomingTempStreamEvent;
+        }
+        else {
+            window[index] = incomingTempStreamEvent;
+            index++;
+        }
+
+    }
+
+    function process({{inputStreamName}}EventDTO memory incoming{{inputStreamName}}Event) public {
+    set(incoming{{inputStreamName}}Event);
+    }
+{{/inputStreamEventList}}
+
+    function check() private {
+        processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
+            {{#streamOutputAttributeList}}
+                {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
+            {{/streamOutputAttributeList}}
+        }));
+    }
+
+{{#windowFunctionList}}
+    {{#averageFunctions}}
+        function {{functionName}}() private view returns ({{type}}) {
+        {{type}} sum = 0;
+        for({{type}} i = 0; i < index; i++){
+        sum += window[i].{{member}};
+        }
+        {{type}} avg = sum / (index);
+        return avg;
+        }
+
+    {{/averageFunctions}}
+    {{#sumFunctions}}
+        function {{functionName}}() private view returns ({{type}}) {
+        {{type}} sum = 0;
+        for({{type}} i = 0; i < index; i++){
+        sum += window[i].{{member}};
+        }
+        return sum;
+        }
+
+    {{/sumFunctions}}
+    {{#maxFunctions}}
+        function {{functionName}}() private view returns ({{type}}) {
+        {{type}} max = window[0].{{member}};
+        for({{type}} i = 0; i < index; i++){
+        if(window[i].{{member}} > max){
+        max = window[i].{{member}};
+        }
+        }
+        return max;
+        }
+
+    {{/maxFunctions}}
+    {{#minFunctions}}
+        function {{functionName}}() private view returns ({{type}}) {
+        {{type}} min = window[0].{{member}};
+        for({{type}} i = 0; i < index; i++){
+        if(window[i].{{member}} < min){
+        min = window[i].{{member}};
+        }
+        }
+        return min;
+        }
+
+    {{/minFunctions}}
+    {{#countFunctions}}
+        function {{functionName}}() private view returns ({{type}}) {
+        {{type}} count = window.length;
+        return count;
+        }
+
+    {{/countFunctions}}
+{{/windowFunctionList}}
+
+{{#parseIntFunctions}}
+    function {{functionName}}(string memory s) private view returns ({{type}}) {
+    bytes memory b = bytes(s);
+    {{type}} result = 0;
+    for (uint i = 0; i < b.length; i++) {
+    if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
+    result = result * 10 + (uint8(b[i]) - 48);
+    }
+    }
+    return result * precisionFactor;
+    }
+
+{{/parseIntFunctions}}
+
+}

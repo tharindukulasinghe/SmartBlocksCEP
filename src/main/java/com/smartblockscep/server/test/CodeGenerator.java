@@ -69,6 +69,10 @@ public class CodeGenerator {
             MustacheFactory mf = new DefaultMustacheFactory();
             m = mf.compile("SlidingWindowContract.mustache");
         }
+        else if(solidityContract.getQueryType() == QueryType.BatchWindow){
+            MustacheFactory mf = new DefaultMustacheFactory();
+            m = mf.compile("BatchWindowContract.mustache");
+        }
         else if(solidityContract.getQueryType() == QueryType.Block){
             MustacheFactory mf = new DefaultMustacheFactory();
             m = mf.compile("BlockWindowContract.mustache");
