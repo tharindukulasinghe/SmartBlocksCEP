@@ -1,4 +1,4 @@
-package com.smartblockscep.server.smartBlocks;
+package com.smartblockscep.server.test;
 
 import java.util.ArrayList;
 import java.util.List;
