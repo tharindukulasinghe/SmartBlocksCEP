@@ -1,8 +1,5 @@
 package com.smartblockscep.server;
 
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
 import com.smartblockscep.server.api.SiddhiApp;
 import com.smartblockscep.server.api.definition.Attribute;
 import com.smartblockscep.server.api.definition.StreamDefinition;
@@ -26,13 +23,12 @@ import com.smartblockscep.server.api.expression.condition.And;
 import com.smartblockscep.server.api.expression.condition.Compare;
 import com.smartblockscep.server.api.expression.condition.Or;
 import com.smartblockscep.server.api.expression.constant.*;
-import com.smartblockscep.server.test.CodeGenerator;
+import com.smartblockscep.server.smartBlocks.CodeGenerator;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
