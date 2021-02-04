@@ -1,10 +1,16 @@
 package com.smartblockscep.server.test;
 
+import com.smartblockscep.server.StreamAttribute;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class InitialInputStream {
     private String name;
     private String referenceId;
     private String expression;
     private boolean isInitial = false;
+    private List<StreamAttribute> streamAttributeList = new ArrayList<>();
 
     public String getName() {
         return name;
@@ -36,5 +42,13 @@ public class InitialInputStream {
 
     public void setInitial(boolean initial) {
         isInitial = initial;
+    }
+
+    public List<StreamAttribute> getStreamAttributeList() {
+        return this.streamAttributeList;
+    }
+
+    public void setStreamAttributeList(List<StreamAttribute> streamAttributeList) {
+        this.streamAttributeList = streamAttributeList;
     }
 }
