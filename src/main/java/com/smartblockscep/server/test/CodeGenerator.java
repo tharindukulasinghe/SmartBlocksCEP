@@ -879,7 +879,7 @@ public class CodeGenerator {
         } else if (type == Attribute.Type.LONG) {
             return "uint256";
         } else if (type == Attribute.Type.DOUBLE) {
-            return "ufixed";
+            return "uint32";
         } else if (type == Attribute.Type.STRING) {
             return "string";
         } else if (type == Attribute.Type.BOOL) {
