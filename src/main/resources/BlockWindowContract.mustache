@@ -7,13 +7,20 @@ contract {{name}} {
     {{inputStreamName}}Event[{{windowLength}}] public window;
 {{/inputStreamEventList}}
     uint256 public index = 0;
-    uint256 public lastBlockSetNumber = -1;
-    uint256 public windowLength = {{windowLength}}
+    uint256 public lastBlockSetNumber = uint256(-1);
+    uint256 public windowLength = {{windowLength}};
+    uint8 private precisionFactor = {{precision}};
 
 {{#inputStreamEventList}}
     struct {{inputStreamName}}Event {
     {{#streamAttributeList}}
         {{type}} {{name}};
+    {{/streamAttributeList}}
+    }
+
+    struct {{inputStreamName}}EventDTO {
+    {{#streamAttributeList}}
+        string {{name}};
     {{/streamAttributeList}}
     }
 {{/inputStreamEventList}}
@@ -27,33 +34,42 @@ contract {{name}} {
     {{ outputStreamName}}Event[] public processed{{outputStreamName}}Events;
 
 {{#inputStreamEventList}}
-    function set({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) private {
-        if(lastBlockSetNumber == -1) {
-            latBlockSetNumber = block.number;
+    function set({{inputStreamName}}EventDTO memory incoming{{inputStreamName}}EventDTO) private {
+
+    {{inputStreamName}}Event memory incoming{{inputStreamName}}Event = {{inputStreamName}}Event({
+    {{#inputStreamEventList}}
+        {{#streamAttributeList}}
+            {{name}} : {{#isParsed}}parseInt{{name}}({{/isParsed}}incoming{{inputStreamName}}EventDTO.{{name}}{{#isParsed}}){{/isParsed}}{{#notLastItem}},{{/notLastItem}}
+        {{/streamAttributeList}}
+        });
+    {{/inputStreamEventList}}
+
+        if(lastBlockSetNumber == uint256(-1)) {
+            lastBlockSetNumber = block.number;
         }
-        if((block.number < windowLength + lastBlockSetNumber) {
-            window[i] = incoming{{inputStreamName}}Event;
+        if(block.number < windowLength + lastBlockSetNumber) {
+            window[index] = incoming{{inputStreamName}}Event;
             index++;
         }
         else {
             index = 0;
             check();
             lastBlockSetNumber = block.number;
-            window[i] = incoming{{inputStreamName}}Event;
+            window[index] = incoming{{inputStreamName}}Event;
             index++;
         }
         check();
     }
 
-    function process({{inputStreamName}}Event memory incoming{{inputStreamName}}Event) public {
-        set(incoming{{inputStreamName}}Event);
+    function process({{inputStreamName}}EventDTO memory incoming{{inputStreamName}}Event) public {
+    set(incoming{{inputStreamName}}Event);
     }
 {{/inputStreamEventList}}
 
     function check() private {
             processed{{outputStreamName}}Events.push({{outputStreamName}}Event({
             {{#streamOutputAttributeList}}
-                {{rename}}: {{function}}{{#notLastItem}},{{/notLastItem}}
+                {{rename}}: {{function}}(){{#notLastItem}},{{/notLastItem}}
             {{/streamOutputAttributeList}}
             }));
     }
@@ -65,7 +81,7 @@ contract {{name}} {
         for({{type}} i = 0; i < index; i++){
             sum += window[i].{{member}};
         }
-        {{type}} avg = sum / (index);
+        {{type}} avg = {{type}}(sum / (index));
         return avg;
     }
 
@@ -112,4 +128,18 @@ contract {{name}} {
 
     {{/countFunctions}}
 {{/windowFunctionList}}
+
+{{#parseIntFunctions}}
+    function {{functionName}}(string memory s) private view returns ({{type}}) {
+        bytes memory b = bytes(s);
+        {{type}} result = 0;
+        for (uint i = 0; i < b.length; i++) {
+            if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
+                result = result * 10 + (uint8(b[i]) - 48);
+            }
+        }
+        return result * precisionFactor;
+    }
+
+{{/parseIntFunctions}}
 }

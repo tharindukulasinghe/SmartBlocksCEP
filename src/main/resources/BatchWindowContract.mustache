@@ -69,46 +69,46 @@ struct {{outputStreamName}}Event {
 {{#windowFunctionList}}
     {{#averageFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} sum = 0;
-        for({{type}} i = 0; i < index; i++){
-        sum += window[i].{{member}};
-        }
-        {{type}} avg = sum / (index);
-        return avg;
+            {{type}} sum = 0;
+            for({{type}} i = 0; i < index; i++){
+                sum += window[i].{{member}};
+            }
+            {{type}} avg = {{type}}(sum / (index));
+            return avg;
         }
 
     {{/averageFunctions}}
     {{#sumFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} sum = 0;
-        for({{type}} i = 0; i < index; i++){
-        sum += window[i].{{member}};
-        }
-        return sum;
+            {{type}} sum = 0;
+            for({{type}} i = 0; i < index; i++){
+                sum += window[i].{{member}};
+            }
+            return sum;
         }
 
     {{/sumFunctions}}
     {{#maxFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} max = window[0].{{member}};
-        for({{type}} i = 0; i < index; i++){
-        if(window[i].{{member}} > max){
-        max = window[i].{{member}};
-        }
-        }
-        return max;
+            {{type}} max = window[0].{{member}};
+            for({{type}} i = 0; i < index; i++){
+                if(window[i].{{member}} > max){
+                    max = window[i].{{member}};
+                }
+            }
+            return max;
         }
 
     {{/maxFunctions}}
     {{#minFunctions}}
         function {{functionName}}() private view returns ({{type}}) {
-        {{type}} min = window[0].{{member}};
-        for({{type}} i = 0; i < index; i++){
-        if(window[i].{{member}} < min){
-        min = window[i].{{member}};
-        }
-        }
-        return min;
+            {{type}} min = window[0].{{member}};
+            for({{type}} i = 0; i < index; i++){
+                if(window[i].{{member}} < min){
+                    min = window[i].{{member}};
+                }
+            }
+            return min;
         }
 
     {{/minFunctions}}
@@ -123,14 +123,14 @@ struct {{outputStreamName}}Event {
 
 {{#parseIntFunctions}}
     function {{functionName}}(string memory s) private view returns ({{type}}) {
-    bytes memory b = bytes(s);
-    {{type}} result = 0;
-    for (uint i = 0; i < b.length; i++) {
-    if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
-    result = result * 10 + (uint8(b[i]) - 48);
-    }
-    }
-    return result * precisionFactor;
+        bytes memory b = bytes(s);
+        {{type}} result = 0;
+        for (uint i = 0; i < b.length; i++) {
+            if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
+                result = result * 10 + (uint8(b[i]) - 48);
+            }
+        }
+        return result * precisionFactor;
     }
 
 {{/parseIntFunctions}}

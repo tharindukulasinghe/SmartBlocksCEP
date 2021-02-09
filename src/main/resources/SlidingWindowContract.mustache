@@ -75,7 +75,7 @@ contract {{name}} {
         for({{type}} i = 0; i < index; i++){
             sum += window[i].{{member}};
         }
-        {{type}} avg = sum / (index);
+        {{type}} avg = {{type}}(sum / (index));
         return avg;
     }
 
