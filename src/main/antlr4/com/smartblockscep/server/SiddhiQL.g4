@@ -852,6 +852,7 @@ OBJECT:   O B J E C T;
 AGGREGATION: A G G R E G A T I O N;
 AGGREGATE: A G G R E G A T E;
 PER:      P E R;
+//INT8:  int8;
 
 ID_QUOTES : '`'(.*?)'`' {setText(getText().substring(1, getText().length()-1));};
 
@@ -921,4 +922,5 @@ fragment W : [wW];
 fragment X : [xX];
 fragment Y : [yY];
 fragment Z : [zZ];
+fragment INT8 : 'int8';
 
